@@ -122,7 +122,9 @@ jobs:
       - name: Install erpnext_gdpdu_export from this checkout
         run: |
           cd ~/frappe-bench
-          bench get-app erpnext_gdpdu_export "$GITHUB_WORKSPACE"
+          # --skip-assets: die App bringt keine Frontend-Assets mit, der
+          # yarn-Build waere nur Laufzeit und schlaegt auf dem Runner fehl.
+          bench get-app --skip-assets erpnext_gdpdu_export "$GITHUB_WORKSPACE"
 
       - name: Create test site
         run: |
