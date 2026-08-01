@@ -9,5 +9,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install ruff && ruff check .
-  # TODO Phase 1: Frappe-Testjob (bench init + install-app + run-tests)
+      - run: pip install ruff && ruff check . && ruff format --check .
+
+  unit:
+    # Formatkern (Schema, CSV, index.xml, Protokoll) — laeuft ohne Frappe-Site.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install lxml
+      - run: python -m unittest discover -s erpnext_gdpdu_export/tests -t .
+
+  # TODO vor v1.0: Frappe-Testjob (bench init + install-app + run-tests),
+  # als Matrix ueber ERPNext v15 und v16.
