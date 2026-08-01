@@ -48,7 +48,7 @@ es `encodings` und je nach Aufruf auch dekodierten Text.
 
 → [`gdpdu/dtd.py`](erpnext_gdpdu_export/gdpdu/dtd.py) liest die DTD binär vom
 Dateipfad und nutzt `get_content()` nur als Rückfallebene. Die DTD bleibt damit
-in beiden Versionen bytegleich (CLAUDE.md Regel 4).
+in beiden Versionen bytegleich (CONTRIBUTING.md Regel 4).
 
 ### 4. Workspace-Format
 

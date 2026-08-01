@@ -21,4 +21,5 @@ jobs:
       - run: pip install lxml
       - run: python -m unittest discover -s erpnext_gdpdu_export/tests -t .
 
-  # TODO Phase 5: Frappe-Testjob (bench init + install-app + run-tests) auf v15
+  # TODO vor v1.0: Frappe-Testjob (bench init + install-app + run-tests),
+  # als Matrix ueber ERPNext v15 und v16.

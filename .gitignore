@@ -9,3 +9,7 @@ erpnext_gdpdu_export/public/dist/
 
 # Fremdartefakt der Audicon GmbH, siehe KONZEPT.md 7.1 — nie einchecken
 erpnext_gdpdu_export/resources/*.dtd
+
+# Interne Arbeitsdateien, nicht Teil der veroeffentlichten App
+CLAUDE.md
+MASSNAHMENPLAN.md

@@ -46,11 +46,11 @@
 - CI führt zusätzlich die Unit-Tests des Formatkerns und `ruff format --check` aus.
 
 ### Bekannt
-- Noch keine Verprobung mit IDEA (Phase 5).
+- Noch keine Verprobung mit IDEA; steht vor der Freigabe als Version 1.0 an.
 - Lohnabrechnungsdaten bleiben außen vor (dafür gibt es die DLS).
 
 ## Phase 0
 
 ### Hinzugefügt
 - Konzept (KONZEPT.md), Maßnahmenplan, SPEC (Feldmapping MVP),
-  CLAUDE.md, Frappe-App-Gerüst, CI- und pre-commit-Grundlage.
+  Arbeitsanweisungen, Frappe-App-Gerüst, CI- und pre-commit-Grundlage.

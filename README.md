@@ -10,7 +10,7 @@ im ERPNext auf einen Knopf und erhalten eine ZIP-Datei, die genau das enthält.
 > **Status: Vorabversion (0.0.1), noch nicht mit IDEA verprobt.** Format und Beschreibungsdatei
 > sind gegen die Original-DTD des Standards validiert und automatisiert getestet;
 > eine reale Verprobung durch einen Prüfer oder Steuerberater steht noch aus
-> (siehe [MASSNAHMENPLAN.md](MASSNAHMENPLAN.md), Phase 5). Rückmeldungen dazu sind
+> vor der Freigabe als Version 1.0. Rückmeldungen dazu sind
 > ausdrücklich erwünscht.
 
 ## Kompatibilität

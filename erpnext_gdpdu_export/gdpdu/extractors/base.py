@@ -1,7 +1,7 @@
 """Shared state and helpers for the extractors.
 
 Every extractor is read-only: it runs SELECTs against accounting data and never
-writes (CLAUDE.md rule 1).
+writes (CONTRIBUTING.md rule 1).
 """
 
 from __future__ import annotations

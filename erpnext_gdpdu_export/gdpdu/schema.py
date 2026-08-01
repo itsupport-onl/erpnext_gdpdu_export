@@ -1,7 +1,7 @@
 """Declarative table definitions — the single source of truth of this app.
 
 The CSV writer and the index.xml generator both consume these definitions, so a
-column can never exist in one place and be missing in the other (CLAUDE.md rule 2).
+column can never exist in one place and be missing in the other (CONTRIBUTING.md rule 2).
 Field mapping and column order follow SPEC.md; changes go into SPEC.md first.
 
 No Frappe dependency, so this module is unit testable with a plain interpreter.
@@ -686,7 +686,3 @@ def validate_schema(tables: tuple[Table, ...] = ALL_TABLES) -> list[str]:
 				problems.append(f"{table.key}: foreign key points to unknown table {foreign_key.references}")
 
 	return problems
-
-
-#: Columns whose sum must match across the whole export (GoBD plausibility check).
-BALANCE_COLUMNS = ("Soll", "Haben")

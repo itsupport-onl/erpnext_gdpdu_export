@@ -1,7 +1,7 @@
 """Access to the Audicon DTD and validation of the generated index.xml.
 
 ``gdpdu-01-08-2002.dtd`` is a third-party artefact (© Audicon GmbH) and is never
-modified by this app (CLAUDE.md rule 4). It is not shipped with this repository;
+modified by this app (CONTRIBUTING.md rule 4). It is not shipped with this repository;
 administrators upload it once in *GDPdU Export Settings* or drop it into
 ``erpnext_gdpdu_export/resources/``.
 
@@ -64,7 +64,7 @@ def get_dtd() -> DtdResult:
 def read_attachment_bytes(file_doc) -> bytes:
 	"""Return the raw bytes of a File document without touching its content.
 
-	The DTD must stay byte identical (CLAUDE.md rule 4), so the file is read in
+	The DTD must stay byte identical (CONTRIBUTING.md rule 4), so the file is read in
 	binary mode; ``get_content()`` is only the fallback for storage backends
 	that do not keep the file on the local disk.
 	"""

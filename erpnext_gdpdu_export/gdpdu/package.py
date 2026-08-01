@@ -2,7 +2,7 @@
 
 Orchestration only — the format rules live in :mod:`gdpdu.csv_writer` and
 :mod:`gdpdu.index_xml`, the data comes from :mod:`gdpdu.extractors`. Nothing here
-writes accounting data (CLAUDE.md rule 1).
+writes accounting data (CONTRIBUTING.md rule 1).
 """
 
 from __future__ import annotations
