@@ -9,17 +9,32 @@ class TestSchema(unittest.TestCase):
 	def test_schema_is_consistent(self):
 		self.assertEqual(schema.validate_schema(), [])
 
-	def test_mvp_tables_are_complete(self):
+	def test_all_tables_are_exported_in_spec_order(self):
 		self.assertEqual(
 			[table.filename for table in schema.get_tables()],
 			[
+				# Finanzbuchhaltung
 				"journal.csv",
 				"kontenplan.csv",
 				"debitoren.csv",
 				"kreditoren.csv",
 				"steuerkennzeichen.csv",
+				# Belegebene, Zahlungen, offene Posten
+				"ausgangsrechnungen.csv",
+				"ausgangsrechnungen_positionen.csv",
+				"eingangsrechnungen.csv",
+				"eingangsrechnungen_positionen.csv",
+				"zahlungen.csv",
+				"zahlungszuordnungen.csv",
+				"opos_debitoren.csv",
+				"opos_kreditoren.csv",
 			],
 		)
+
+	def test_scope_is_not_configurable(self):
+		# The tax audit defines the scope, not the taxpayer (SPEC.md, stage 2).
+		self.assertEqual(schema.get_tables(), schema.ALL_TABLES)
+		self.assertEqual(schema.ALL_TABLES, schema.MVP_TABLES + schema.STAGE_2_TABLES)
 
 	def test_journal_columns_follow_spec(self):
 		self.assertEqual(
@@ -46,16 +61,52 @@ class TestSchema(unittest.TestCase):
 			),
 		)
 
-	def test_every_table_has_exactly_one_key(self):
+	def test_every_table_has_a_key(self):
 		for table in schema.get_tables():
 			with self.subTest(table=table.key):
-				self.assertEqual(len(table.key_columns), 1)
+				self.assertGreaterEqual(len(table.key_columns), 1)
+				# Key columns are matched positionally by the DTD.
+				self.assertEqual(
+					table.header[: len(table.key_columns)],
+					tuple(column.name for column in table.key_columns),
+				)
 
-	def test_amounts_use_accuracy_two(self):
+	def test_open_items_use_a_composite_key(self):
+		self.assertEqual(
+			[column.name for column in schema.OPEN_ITEMS_CUSTOMERS.key_columns],
+			["Partei", "Beleg", "Konto"],
+		)
+
+	def test_every_numeric_column_declares_its_accuracy(self):
 		for table in schema.get_tables():
 			for column in table.columns:
 				if column.type == schema.NUMERIC:
 					with self.subTest(column=f"{table.key}.{column.name}"):
+						self.assertIsNotNone(column.accuracy)
+						self.assertGreaterEqual(column.accuracy, 0)
+
+	def test_monetary_columns_use_accuracy_two(self):
+		monetary = {
+			"Soll",
+			"Haben",
+			"Satz",
+			"Netto",
+			"Steuer",
+			"Brutto",
+			"NettoFirmenwaehrung",
+			"SteuerFirmenwaehrung",
+			"BruttoFirmenwaehrung",
+			"Einzelpreis",
+			"Betrag",
+			"BetragFirmenwaehrung",
+			"ZugeordneterBetrag",
+			"OffenerBetrag",
+		}
+		for table in schema.get_tables():
+			for column in table.columns:
+				if column.name in monetary:
+					with self.subTest(column=f"{table.key}.{column.name}"):
+						self.assertEqual(column.type, schema.NUMERIC)
 						self.assertEqual(column.accuracy, 2)
 
 	def test_get_table(self):

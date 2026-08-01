@@ -13,6 +13,15 @@ im ERPNext auf einen Knopf und erhalten eine ZIP-Datei, die genau das enthält.
 > (siehe [MASSNAHMENPLAN.md](MASSNAHMENPLAN.md), Phase 5). Rückmeldungen dazu sind
 > ausdrücklich erwünscht.
 
+## Kompatibilität
+
+Dieselbe Codebasis läuft auf **ERPNext/Frappe v15 und v16**; beide Versionen sind
+mit dem vollständigen Testlauf und einem echten Export im Desk verprobt
+(v15: Frappe 15.116 / ERPNext 15.118 · v16: Frappe 16.29 / ERPNext 16.30).
+
+Die vier Stellen, an denen sich die Versionen unterscheiden, sind im Code
+abgefangen — Details in [KOMPATIBILITAET.md](KOMPATIBILITAET.md).
+
 ## Was die App nie tut
 
 - **Sie bucht nichts.** Nur-Lese-Zugriff auf Journal, Konten und Stammdaten.
@@ -71,15 +80,23 @@ große Journale einige Minuten.
 | `gdpdu-01-08-2002.dtd` | Zugehörige DTD (Bestandteil des Standards) |
 | `journal.csv` | Vollständiges Buchungsjournal des Zeitraums — die Haupttabelle |
 | `kontenplan.csv` | Alle Sachkonten des Unternehmens |
-| `debitoren.csv` | Kunden mit Buchungen im Zeitraum (Name, Anschrift, USt-IdNr.) |
-| `kreditoren.csv` | Lieferanten mit Buchungen im Zeitraum |
+| `debitoren.csv` | Kunden mit Buchungen im Zeitraum oder offenem Posten |
+| `kreditoren.csv` | Lieferanten mit Buchungen im Zeitraum oder offenem Posten |
 | `steuerkennzeichen.csv` | Steuerkonten mit Steuersatz |
+| `ausgangsrechnungen.csv` / `…_positionen.csv` | Ausgangsrechnungen mit Einzelpositionen |
+| `eingangsrechnungen.csv` / `…_positionen.csv` | Eingangsrechnungen inkl. Lieferantenbelegnummer |
+| `zahlungen.csv` | Zahlungsein- und -ausgänge |
+| `zahlungszuordnungen.csv` | welche Zahlung welche Rechnung ausgleicht |
+| `opos_debitoren.csv` / `opos_kreditoren.csv` | offene Posten zum Ende des Zeitraums |
 | `pruefprotokoll.txt` | Zeilenzahlen, Summen, Hinweise zu diesem Export |
 | `LIESMICH.txt` | Klartext-Erläuterung für Anwender und Prüfer |
 
-Exportiert wird die **gesamte Finanzbuchhaltung** des Zeitraums, ohne Auswahl
-einzelner Konten — genau das erwartet die Betriebsprüfung. Das genaue
-Feldmapping steht in [SPEC.md](SPEC.md).
+Exportiert wird die **gesamte Finanzbuchhaltung** des Zeitraums samt Belegebene,
+ohne Auswahl einzelner Konten oder Tabellen — genau das erwartet die
+Betriebsprüfung. Es gibt bewusst keinen Schalter, um Teile wegzulassen: den
+Umfang bestimmt die Prüfung, nicht der Steuerpflichtige. Führt Ihr Betrieb
+z. B. keine Rechnungen in ERPNext, bleibt die betreffende Datei einfach leer.
+Das genaue Feldmapping steht in [SPEC.md](SPEC.md).
 
 ## Das Prüfprotokoll verstehen
 
@@ -114,9 +131,7 @@ liegen in Ihrer Verantwortung.
 
 ## Nicht enthalten
 
-- **Belegebene** (Ausgangs-/Eingangsrechnungen mit Positionen, Zahlungen, offene
-  Posten) — geplant als Stufe 2
-- **Anlagenbuchhaltung** — geplant als Stufe 3, von den GoBD (Rz. 159)
+- **Anlagenbuchhaltung** — nächster Ausbauschritt, von den GoBD (Rz. 159)
   ausdrücklich erwartet
 - **Lohnabrechnungsdaten** — dafür existiert die Digitale LohnSchnittstelle (DLS).
   Alle FiBu-Buchungen zu Personalkosten sind selbstverständlich Teil des Journals

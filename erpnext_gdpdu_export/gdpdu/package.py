@@ -74,6 +74,7 @@ def build_package(
 			protocol.add_table(table.filename, table.name, count, table.user_hint)
 
 		_check_plausibility(protocol)
+		_check_timezone(protocol)
 
 		_report(progress, 80, "Erstelle Beschreibungsdatei index.xml …")
 		index_xml = build_index_xml(
@@ -154,6 +155,24 @@ def _package_name(company: str, from_date, to_date) -> str:
 
 
 # ------------------------------------------------------------------- checking
+
+
+def _check_timezone(protocol: Protocol) -> None:
+	"""A non-European system timezone shifts every recorded time in the export."""
+	timezone = frappe.db.get_single_value("System Settings", "time_zone") or ""
+	if timezone and not timezone.startswith(("Europe/", "UTC")):
+		protocol.add_warning(
+			code="timezone",
+			message=(
+				f"Die Zeitzone dieses ERPNext-Systems ist {timezone}. Die Spalten ErfasstAm "
+				"und ErfasstUm werden in dieser Zeitzone exportiert."
+			),
+			hint=(
+				"Für eine deutsche Betriebsprüfung ist Europe/Berlin zu erwarten. Prüfen Sie "
+				"die Einstellung unter System-Einstellungen; bereits erfasste Zeitstempel "
+				"bleiben davon unberührt."
+			),
+		)
 
 
 def _check_plausibility(protocol: Protocol) -> None:

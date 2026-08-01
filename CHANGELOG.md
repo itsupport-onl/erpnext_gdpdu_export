@@ -21,15 +21,29 @@
   gegen eine ERPNext-v15-Site; die erzeugte index.xml wird gegen die
   Original-DTD validiert.
 
+- **Phase 4 — Belegebene:** Ausgangs- und Eingangsrechnungen inkl. Positionen,
+  Zahlungen mit Zuordnung zum ausgeglichenen Beleg sowie offene Posten der
+  Debitoren und Kreditoren zum Stichtag (aus dem Journal über `against_voucher`
+  gerechnet, nicht aus dem tagesaktuellen Saldo). Insgesamt 13 Tabellen.
+- Kompatibilität mit **ERPNext/Frappe v15 und v16** aus einer Codebasis, beide
+  Versionen vollständig verprobt (siehe KOMPATIBILITAET.md).
+- Prüfprotokoll warnt, wenn die Systemzeitzone außerhalb Europas liegt —
+  Erfassungszeiten würden sonst verschoben im Export stehen.
+
 ### Geändert
 - SPEC.md präzisiert: Elementreihenfolge der DTD, Schlüsselspalten zuerst,
   kein ForeignKey auf `Gegenpartei` (dynamisch Debitor/Kreditor), Umgang mit
   doppelten Kontoschlüsseln, Paketinhalt.
+- Stufe 2 ist **nicht abwählbar** (Abweichung vom ursprünglichen Konzept mit
+  Checkboxen): Den Prüfungsumfang bestimmt die Betriebsprüfung, nicht der
+  Steuerpflichtige — Begründung in KONZEPT.md §3.
+- Debitoren/Kreditoren enthalten zusätzlich Parteien mit offenem Posten zum
+  Stichtag, damit jede Referenz der OPOS-Tabellen auflösbar bleibt.
 - CI führt zusätzlich die Unit-Tests des Formatkerns und `ruff format --check` aus.
 
 ### Bekannt
 - Noch keine Verprobung mit IDEA (Phase 5).
-- Stufe 2 (Belegebene, offene Posten) und Anlagenbuchhaltung fehlen.
+- Anlagenbuchhaltung fehlt noch (nächster Ausbauschritt).
 
 ## Phase 0
 

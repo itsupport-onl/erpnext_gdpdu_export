@@ -80,14 +80,20 @@ fünf MVP-CSVs, Prüfprotokoll und LIESMICH; Soll = Haben im Protokoll.
 Zusätzlich: DTD-Upload in den Settings, Arbeitsbereich, Statusfarben in der
 Liste, Polling-Fallback für Setups ohne Websocket.
 
-## Phase 4 — Stufe-2-Tabellen (optional zuschaltbar)  *(nächster Schritt)*
+## Phase 4 — Stufe-2-Tabellen (fester Bestandteil des Exports)
 
 1. Extractors + Schemata: Ausgangs-/Eingangsrechnungen inkl. Positionen,
-   Zahlungen, OPOS zum Stichtag (Checkboxen im DocType)
-2. ForeignKeys Belege ↔ Journal in index.xml
+   Zahlungen inkl. Zuordnung, OPOS zum Stichtag
+2. ForeignKeys der Belegebene in index.xml
 3. Tests analog Phase 2/3
 
 **DoD:** Vollpaket mit Stufe 2 erzeugt, DTD-valide, Tests grün.
+
+**Status: erledigt.** Abweichung vom ursprünglichen Plan: **keine Checkboxen** —
+der Umfang ist nicht Wahl des Steuerpflichtigen (Begründung in KONZEPT.md §3).
+13 Tabellen im Paket, DTD-valide, 91 Tests grün auf v15 *und* v16. OPOS werden
+aus dem Journal zum Stichtag gerechnet (`against_voucher`), nicht aus dem
+tagesaktuellen Saldo.
 
 ## Phase 5 — Doku, Recht, Release
 

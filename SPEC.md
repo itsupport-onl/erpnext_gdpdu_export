@@ -144,12 +144,148 @@ UTF-8 mit Umlauten.
 | `pruefprotokoll.txt` | Zeilenzahlen, Summen, Warnungen | nein |
 | `LIESMICH.txt` | Klartext-Erläuterung für Anwender und Prüfer | nein |
 
-## Stufe 2 (Belegebene) — Skizze
+## Stufe 2 — Belegebene, Zahlungen, offene Posten
 
-`ausgangsrechnungen.csv` (Sales Invoice, docstatus=1): Belegnummer PK,
-Datum, Debitor FK, Netto, Steuer, Brutto, Währung, Fälligkeit, Status.
-`ausgangsrechnungen_positionen.csv`: Belegnummer FK, Position, Artikel,
-Menge, Einzelpreis, Netto, Ertragskonto FK→kontenplan.
-Eingangsseite analog. `zahlungen.csv` (Payment Entry): Zahlungsnummer PK,
-Datum, Richtung, Partei, Betrag, Referenzen. OPOS: AR/AP zum Stichtag „bis".
-Detaillierung erfolgt zu Beginn von Phase 4 in dieser Datei.
+**Nicht abwählbar.** Die GoBD (Rz. 159) verlangen die Daten der
+Finanzbuchhaltung *und aller Vor- und Nebensysteme mit aufzeichnungs- und
+aufbewahrungspflichtigen Unterlagen*; Aus- und Eingangsrechnungen sind nach
+§ 147 Abs. 1 AO aufbewahrungspflichtig. Der Umfang ist damit nicht Wahl des
+Steuerpflichtigen. Tabellen ohne Daten werden als CSV mit reiner Kopfzeile
+exportiert (z. B. wenn ein Betrieb keine Rechnungen in ERPNext schreibt).
+
+Beträge: Spalten ohne Zusatz stehen in **Belegwährung**, Spalten mit dem Zusatz
+`…Firmenwaehrung` in der Währung des Unternehmens (dieselbe wie im Journal).
+
+### ausgangsrechnungen.csv
+
+Quelle: `Sales Invoice`, Filter `company`, `docstatus = 1`, `posting_date` in
+[von, bis]. Sortierung: `posting_date, name`.
+
+| Spalte | Typ | Quelle | Bemerkung |
+|---|---|---|---|
+| Belegnummer | AlphaNumeric, PK | `name` | identisch mit `journal.Belegnummer` |
+| Belegdatum | Date | `posting_date` | |
+| Faelligkeit | Date | `due_date` | |
+| Debitor | AlphaNumeric, FK→Debitoren | `customer` | |
+| DebitorName | AlphaNumeric | `customer_name` | |
+| Waehrung | AlphaNumeric | `currency` | |
+| Wechselkurs | Numeric(6) | `conversion_rate` | 1 bei Firmenwährung |
+| Netto | Numeric(2) | `net_total` | |
+| Steuer | Numeric(2) | `total_taxes_and_charges` | |
+| Brutto | Numeric(2) | `grand_total` | |
+| NettoFirmenwaehrung | Numeric(2) | `base_net_total` | |
+| SteuerFirmenwaehrung | Numeric(2) | `base_total_taxes_and_charges` | |
+| BruttoFirmenwaehrung | Numeric(2) | `base_grand_total` | |
+| IstGutschrift | AlphaNumeric + Map 0→Nein,1→Ja | `is_return` | |
+| Status | AlphaNumeric | `status` | |
+| Buchungstext | AlphaNumeric | `remarks` | CR/LF bereinigt |
+| ErfasstAm / ErfasstUm / ErfasstVon | Date / AlphaNumeric / AlphaNumeric | `creation`, `owner` | wie Journal |
+
+### ausgangsrechnungen_positionen.csv
+
+Quelle: `Sales Invoice Item` der oben exportierten Belege.
+
+| Spalte | Typ | Quelle |
+|---|---|---|
+| PositionsID | AlphaNumeric, PK | `name` (Zeilen-ID) |
+| Belegnummer | AlphaNumeric, FK→Ausgangsrechnungen | `parent` |
+| Position | Numeric(0) | `idx` |
+| Artikel | AlphaNumeric | `item_code` |
+| Bezeichnung | AlphaNumeric | `item_name` |
+| Menge | Numeric(3) | `qty` |
+| Einheit | AlphaNumeric | `uom` |
+| Einzelpreis | Numeric(2) | `rate` |
+| Netto | Numeric(2) | `net_amount` |
+| NettoFirmenwaehrung | Numeric(2) | `base_net_amount` |
+| Ertragskonto | AlphaNumeric, FK→Kontenplan | `income_account` |
+| Kostenstelle | AlphaNumeric | `cost_center` |
+| Steuervorlage | AlphaNumeric | `item_tax_template` |
+
+### eingangsrechnungen.csv
+
+Quelle: `Purchase Invoice`, Filter analog. Zusätzlich zur Ausgangsseite:
+
+| Spalte | Typ | Quelle | Bemerkung |
+|---|---|---|---|
+| Kreditor | AlphaNumeric, FK→Kreditoren | `supplier` | |
+| KreditorName | AlphaNumeric | `supplier_name` | |
+| LieferantenBelegnummer | AlphaNumeric | `bill_no` | Rechnungsnummer des Lieferanten |
+| LieferantenBelegdatum | Date | `bill_date` | |
+
+Übrige Spalten wie `ausgangsrechnungen.csv`.
+
+### eingangsrechnungen_positionen.csv
+
+Wie die Ausgangsseite, statt `Ertragskonto` das **Aufwandskonto**
+(`expense_account`, FK→Kontenplan).
+
+### zahlungen.csv
+
+Quelle: `Payment Entry`, Filter `company`, `docstatus = 1`, `posting_date` in
+[von, bis].
+
+| Spalte | Typ | Quelle | Bemerkung |
+|---|---|---|---|
+| Zahlungsnummer | AlphaNumeric, PK | `name` | |
+| Buchungsdatum | Date | `posting_date` | |
+| Zahlungsart | AlphaNumeric + Map | `payment_type` | Receive→Eingang, Pay→Ausgang, Internal Transfer→Umbuchung |
+| GegenparteiTyp | AlphaNumeric | `party_type` | |
+| Gegenpartei | AlphaNumeric | `party` | siehe Hinweis beim Journal |
+| KontoVon | AlphaNumeric, FK→Kontenplan | `paid_from` | |
+| KontoNach | AlphaNumeric, FK→Kontenplan | `paid_to` | |
+| Betrag | Numeric(2) | `paid_amount` | |
+| Waehrung | AlphaNumeric | `paid_from_account_currency` | |
+| BetragFirmenwaehrung | Numeric(2) | `base_paid_amount` | |
+| Referenz | AlphaNumeric | `reference_no` | Beleg-/Transaktionsnummer der Bank |
+| Referenzdatum | Date | `reference_date` | |
+| Buchungstext | AlphaNumeric | `remarks` | |
+| ErfasstAm / ErfasstUm / ErfasstVon | | `creation`, `owner` | |
+
+### zahlungszuordnungen.csv
+
+Quelle: `Payment Entry Reference` der exportierten Zahlungen — beantwortet die
+Prüferfrage „welche Zahlung tilgt welche Rechnung".
+
+| Spalte | Typ | Quelle |
+|---|---|---|
+| ZuordnungsID | AlphaNumeric, PK | `name` |
+| Zahlungsnummer | AlphaNumeric, FK→Zahlungen | `parent` |
+| Belegart | AlphaNumeric | `reference_doctype` |
+| Belegnummer | AlphaNumeric | `reference_name` |
+| ZugeordneterBetrag | Numeric(2) | `allocated_amount` |
+
+### opos_debitoren.csv / opos_kreditoren.csv
+
+Offene Posten **zum Stichtag „bis"**, aus dem Journal gerechnet (nicht aus dem
+tagesaktuellen Saldo): Summe `debit - credit` je Partei, Beleg und Konto über
+alle GL Entries mit `posting_date <= bis`, `is_cancelled = 0` und
+`party_type = Customer` bzw. `Supplier` auf Konten mit `account_type`
+`Receivable` bzw. `Payable`. Gruppiert wird nach `against_voucher` (ERPNext
+verweist damit von Zahlung/Gutschrift auf die Ursprungsrechnung), ersatzweise
+nach `voucher_no`. Zeilen mit Saldo 0,00 entfallen.
+
+| Spalte | Typ | Quelle | Bemerkung |
+|---|---|---|---|
+| Partei | AlphaNumeric, PK, FK→Debitoren/Kreditoren | `party` | |
+| Beleg | AlphaNumeric, PK | `against_voucher`, ersatzweise `voucher_no` | |
+| Konto | AlphaNumeric, PK, FK→Kontenplan | `account` | |
+| Belegart | AlphaNumeric | `against_voucher_type`, ersatzweise `voucher_type` | |
+| Belegdatum | Date | frühestes `posting_date` der Gruppe | |
+| OffenerBetrag | Numeric(2) | Debitoren: Σ(Soll−Haben), Kreditoren: Σ(Haben−Soll) | positiv = offen |
+| Waehrung | AlphaNumeric | Firmenwährung | |
+| Stichtag | Date | Exportende „bis" | in jeder Zeile, damit der Bezug eindeutig ist |
+
+Der Beschreibungsstandard erlaubt mehrere `VariablePrimaryKey`-Spalten; die drei
+Schlüsselspalten stehen deshalb am Anfang der Datei.
+
+### ForeignKeys der Stufe 2
+
+`positionen.Belegnummer` → Rechnung · `positionen.Ertragskonto`/`Aufwandskonto`
+→ Kontenplan · `rechnung.Debitor`/`Kreditor` → Debitoren/Kreditoren ·
+`zahlungen.KontoVon`/`KontoNach` → Kontenplan · `zahlungszuordnungen.Zahlungsnummer`
+→ Zahlungen · `opos.Konto` → Kontenplan · `opos.Partei` → Debitoren bzw. Kreditoren.
+
+Bewusst **kein** ForeignKey von `journal.Belegnummer` auf die Rechnungstabellen:
+das Journal enthält alle Belegarten, ein FK wäre für Zahlungen, Buchungssätze
+usw. referenziell unauflösbar. `zahlungszuordnungen.Belegnummer` bleibt aus dem
+gleichen Grund ohne FK (Ziel kann Ausgangs- oder Eingangsrechnung sein).

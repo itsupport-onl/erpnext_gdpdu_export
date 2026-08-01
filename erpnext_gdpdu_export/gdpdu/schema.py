@@ -274,16 +274,290 @@ TAXES = Table(
 	foreign_keys=(ForeignKey(columns=("Steuerkonto",), references="Kontenplan"),),
 )
 
-#: Tables of the MVP, in export order. The journal runs first because it collects
-#: which accounts and parties are actually used.
+# --------------------------------------------------------------- stage 2
+#
+# Document level, payments and open items. Not optional: the GoBD expect the
+# records of the accounting system including the documents behind the postings
+# (SPEC.md, stage 2). Tables without data are written as a header-only file.
+
+MAP_YES_NO = (
+	ValueMap(from_value="0", to_value="Nein"),
+	ValueMap(from_value="1", to_value="Ja"),
+)
+
+_AUDIT_COLUMNS = (
+	Column(name="ErfasstAm", type=DATE, description="Datum der Erfassung im System."),
+	Column(
+		name="ErfasstUm",
+		description="Uhrzeit der Erfassung im System.",
+		maps=(ValueMap(from_value=TIME_FORMAT, to_value=TIME_FORMAT, description="Zeitformat"),),
+	),
+	Column(name="ErfasstVon", description="Benutzerkennung des Erfassers."),
+)
+
+
+def _invoice_columns(party_columns: tuple[Column, ...]) -> tuple[Column, ...]:
+	"""Columns shared by the outgoing and incoming invoice tables."""
+	return (
+		Column(name="Belegnummer", is_key=True, description="Belegnummer im System."),
+		Column(name="Belegdatum", type=DATE, description="Datum des Belegs."),
+		Column(name="Faelligkeit", type=DATE, description="Faelligkeitsdatum."),
+		*party_columns,
+		Column(name="Waehrung", max_length=3, description="Waehrung des Belegs (ISO-Code)."),
+		Column(
+			name="Wechselkurs",
+			type=NUMERIC,
+			accuracy=6,
+			description="Umrechnungskurs in die Waehrung des Unternehmens.",
+		),
+		_amount("Netto", "Nettobetrag in Belegwaehrung."),
+		_amount("Steuer", "Steuerbetrag in Belegwaehrung."),
+		_amount("Brutto", "Bruttobetrag in Belegwaehrung."),
+		_amount("NettoFirmenwaehrung", "Nettobetrag in der Waehrung des Unternehmens."),
+		_amount("SteuerFirmenwaehrung", "Steuerbetrag in der Waehrung des Unternehmens."),
+		_amount("BruttoFirmenwaehrung", "Bruttobetrag in der Waehrung des Unternehmens."),
+		Column(
+			name="IstGutschrift",
+			description="Kennzeichen, ob der Beleg eine Gutschrift bzw. Stornorechnung ist.",
+			maps=MAP_YES_NO,
+		),
+		Column(name="Status", description="Status des Belegs im System."),
+		Column(name="Buchungstext", description="Bemerkung zum Beleg."),
+		*_AUDIT_COLUMNS,
+	)
+
+
+def _invoice_item_columns(account_column: Column) -> tuple[Column, ...]:
+	"""Columns shared by the position tables of both invoice types."""
+	return (
+		Column(name="PositionsID", is_key=True, description="Eindeutige Kennung der Belegposition."),
+		Column(name="Belegnummer", description="Beleg, zu dem die Position gehoert."),
+		Column(name="Position", type=NUMERIC, accuracy=0, description="Positionsnummer im Beleg."),
+		Column(name="Artikel", description="Artikelnummer."),
+		Column(name="Bezeichnung", description="Artikelbezeichnung."),
+		Column(name="Menge", type=NUMERIC, accuracy=3, description="Menge."),
+		Column(name="Einheit", description="Mengeneinheit."),
+		_amount("Einzelpreis", "Einzelpreis in Belegwaehrung."),
+		_amount("Netto", "Nettobetrag der Position in Belegwaehrung."),
+		_amount("NettoFirmenwaehrung", "Nettobetrag der Position in der Waehrung des Unternehmens."),
+		account_column,
+		Column(name="Kostenstelle", description="Kostenstelle der Position."),
+		Column(name="Steuervorlage", description="Steuervorlage der Position."),
+	)
+
+
+SALES_INVOICES = Table(
+	key="sales_invoices",
+	filename="ausgangsrechnungen.csv",
+	name="Ausgangsrechnungen",
+	description="Gebuchte Ausgangsrechnungen und Gutschriften des Exportzeitraums.",
+	user_hint="Ausgangsrechnungen des Zeitraums (Kopfdaten inkl. Steuer und Faelligkeit).",
+	columns=_invoice_columns(
+		(
+			Column(name="Debitor", description="Kennung des Kunden, siehe Tabelle Debitoren."),
+			Column(name="DebitorName", description="Name des Kunden."),
+		)
+	),
+	foreign_keys=(ForeignKey(columns=("Debitor",), references="Debitoren"),),
+)
+
+SALES_INVOICE_ITEMS = Table(
+	key="sales_invoice_items",
+	filename="ausgangsrechnungen_positionen.csv",
+	name="Ausgangsrechnungspositionen",
+	description="Einzelpositionen der exportierten Ausgangsrechnungen.",
+	user_hint="Einzelpositionen der Ausgangsrechnungen (Artikel, Menge, Preis, Ertragskonto).",
+	columns=_invoice_item_columns(
+		Column(name="Ertragskonto", description="Ertragskonto der Position, siehe Tabelle Kontenplan.")
+	),
+	foreign_keys=(
+		ForeignKey(columns=("Belegnummer",), references="Ausgangsrechnungen"),
+		ForeignKey(columns=("Ertragskonto",), references="Kontenplan"),
+	),
+)
+
+PURCHASE_INVOICES = Table(
+	key="purchase_invoices",
+	filename="eingangsrechnungen.csv",
+	name="Eingangsrechnungen",
+	description="Gebuchte Eingangsrechnungen und Gutschriften des Exportzeitraums.",
+	user_hint="Eingangsrechnungen des Zeitraums (Kopfdaten inkl. Lieferantenbelegnummer).",
+	columns=_invoice_columns(
+		(
+			Column(name="Kreditor", description="Kennung des Lieferanten, siehe Tabelle Kreditoren."),
+			Column(name="KreditorName", description="Name des Lieferanten."),
+			Column(
+				name="LieferantenBelegnummer",
+				description="Rechnungsnummer des Lieferanten.",
+			),
+			Column(
+				name="LieferantenBelegdatum",
+				type=DATE,
+				description="Rechnungsdatum des Lieferanten.",
+			),
+		)
+	),
+	foreign_keys=(ForeignKey(columns=("Kreditor",), references="Kreditoren"),),
+)
+
+PURCHASE_INVOICE_ITEMS = Table(
+	key="purchase_invoice_items",
+	filename="eingangsrechnungen_positionen.csv",
+	name="Eingangsrechnungspositionen",
+	description="Einzelpositionen der exportierten Eingangsrechnungen.",
+	user_hint="Einzelpositionen der Eingangsrechnungen (Artikel, Menge, Preis, Aufwandskonto).",
+	columns=_invoice_item_columns(
+		Column(name="Aufwandskonto", description="Aufwandskonto der Position, siehe Tabelle Kontenplan.")
+	),
+	foreign_keys=(
+		ForeignKey(columns=("Belegnummer",), references="Eingangsrechnungen"),
+		ForeignKey(columns=("Aufwandskonto",), references="Kontenplan"),
+	),
+)
+
+PAYMENTS = Table(
+	key="payments",
+	filename="zahlungen.csv",
+	name="Zahlungen",
+	description="Gebuchte Zahlungsvorgaenge des Exportzeitraums.",
+	user_hint="Zahlungen des Zeitraums (Ein- und Ausgang, Bankkonto, Betrag).",
+	columns=(
+		Column(name="Zahlungsnummer", is_key=True, description="Nummer des Zahlungsbelegs."),
+		Column(name="Buchungsdatum", type=DATE, description="Datum der Verbuchung."),
+		Column(
+			name="Zahlungsart",
+			description="Richtung des Zahlungsvorgangs.",
+			maps=(
+				ValueMap(from_value="Receive", to_value="Zahlungseingang"),
+				ValueMap(from_value="Pay", to_value="Zahlungsausgang"),
+				ValueMap(from_value="Internal Transfer", to_value="Umbuchung"),
+			),
+		),
+		Column(
+			name="GegenparteiTyp",
+			description="Art der Gegenpartei: Customer (Debitor), Supplier (Kreditor) oder leer.",
+		),
+		Column(
+			name="Gegenpartei",
+			description=(
+				"Kennung der Gegenpartei. Bei GegenparteiTyp=Customer siehe Tabelle Debitoren, "
+				"bei GegenparteiTyp=Supplier siehe Tabelle Kreditoren."
+			),
+		),
+		Column(name="KontoVon", description="Belastetes Konto, siehe Tabelle Kontenplan."),
+		Column(name="KontoNach", description="Empfangendes Konto, siehe Tabelle Kontenplan."),
+		_amount("Betrag", "Zahlbetrag in Belegwaehrung."),
+		Column(name="Waehrung", max_length=3, description="Waehrung der Zahlung (ISO-Code)."),
+		_amount("BetragFirmenwaehrung", "Zahlbetrag in der Waehrung des Unternehmens."),
+		Column(name="Referenz", description="Beleg- oder Transaktionsnummer, z. B. der Bank."),
+		Column(name="Referenzdatum", type=DATE, description="Datum der Referenz."),
+		Column(name="Buchungstext", description="Bemerkung zum Zahlungsvorgang."),
+		*_AUDIT_COLUMNS,
+	),
+	foreign_keys=(
+		ForeignKey(columns=("KontoVon",), references="Kontenplan"),
+		ForeignKey(columns=("KontoNach",), references="Kontenplan"),
+	),
+)
+
+PAYMENT_ALLOCATIONS = Table(
+	key="payment_allocations",
+	filename="zahlungszuordnungen.csv",
+	name="Zahlungszuordnungen",
+	description="Zuordnung der Zahlungen zu den ausgeglichenen Belegen.",
+	user_hint="Welche Zahlung welche Rechnung ausgleicht.",
+	columns=(
+		Column(name="ZuordnungsID", is_key=True, description="Eindeutige Kennung der Zuordnung."),
+		Column(name="Zahlungsnummer", description="Zahlung, zu der die Zuordnung gehoert."),
+		Column(name="Belegart", description="Art des ausgeglichenen Belegs."),
+		Column(
+			name="Belegnummer",
+			description=(
+				"Nummer des ausgeglichenen Belegs; je nach Belegart in der Tabelle "
+				"Ausgangsrechnungen oder Eingangsrechnungen zu finden."
+			),
+		),
+		_amount("ZugeordneterBetrag", "Auf den Beleg angerechneter Betrag."),
+	),
+	foreign_keys=(ForeignKey(columns=("Zahlungsnummer",), references="Zahlungen"),),
+)
+
+
+def _open_item_columns(party_description: str) -> tuple[Column, ...]:
+	return (
+		Column(name="Partei", is_key=True, description=party_description),
+		Column(
+			name="Beleg",
+			is_key=True,
+			description="Ursprungsbeleg des offenen Postens.",
+		),
+		Column(name="Konto", is_key=True, description="Personenkonto, siehe Tabelle Kontenplan."),
+		Column(name="Belegart", description="Art des Ursprungsbelegs."),
+		Column(name="Belegdatum", type=DATE, description="Datum des Ursprungsbelegs."),
+		_amount("OffenerBetrag", "Zum Stichtag offener Betrag; positiv bedeutet offen."),
+		Column(name="Waehrung", max_length=3, description="Waehrung des Unternehmens (ISO-Code)."),
+		Column(name="Stichtag", type=DATE, description="Stichtag der Ermittlung (Ende des Exportzeitraums)."),
+	)
+
+
+OPEN_ITEMS_CUSTOMERS = Table(
+	key="open_items_customers",
+	filename="opos_debitoren.csv",
+	name="OffenePostenDebitoren",
+	description=(
+		"Offene Posten der Debitoren zum Stichtag, ermittelt aus dem Buchungsjournal "
+		"bis einschliesslich Ende des Exportzeitraums."
+	),
+	user_hint="Offene Forderungen zum Ende des Zeitraums.",
+	columns=_open_item_columns("Kennung des Kunden, siehe Tabelle Debitoren."),
+	foreign_keys=(
+		ForeignKey(columns=("Partei",), references="Debitoren"),
+		ForeignKey(columns=("Konto",), references="Kontenplan"),
+	),
+)
+
+OPEN_ITEMS_SUPPLIERS = Table(
+	key="open_items_suppliers",
+	filename="opos_kreditoren.csv",
+	name="OffenePostenKreditoren",
+	description=(
+		"Offene Posten der Kreditoren zum Stichtag, ermittelt aus dem Buchungsjournal "
+		"bis einschliesslich Ende des Exportzeitraums."
+	),
+	user_hint="Offene Verbindlichkeiten zum Ende des Zeitraums.",
+	columns=_open_item_columns("Kennung des Lieferanten, siehe Tabelle Kreditoren."),
+	foreign_keys=(
+		ForeignKey(columns=("Partei",), references="Kreditoren"),
+		ForeignKey(columns=("Konto",), references="Kontenplan"),
+	),
+)
+
+#: Finanzbuchhaltung: journal, chart of accounts and the master data it refers to.
+#: The journal runs first because it defines which accounts and parties are used.
 MVP_TABLES: tuple[Table, ...] = (JOURNAL, ACCOUNTS, CUSTOMERS, SUPPLIERS, TAXES)
 
-ALL_TABLES: tuple[Table, ...] = MVP_TABLES
+#: Document level, payments and open items (SPEC.md, stage 2).
+STAGE_2_TABLES: tuple[Table, ...] = (
+	SALES_INVOICES,
+	SALES_INVOICE_ITEMS,
+	PURCHASE_INVOICES,
+	PURCHASE_INVOICE_ITEMS,
+	PAYMENTS,
+	PAYMENT_ALLOCATIONS,
+	OPEN_ITEMS_CUSTOMERS,
+	OPEN_ITEMS_SUPPLIERS,
+)
+
+ALL_TABLES: tuple[Table, ...] = MVP_TABLES + STAGE_2_TABLES
 
 
 def get_tables() -> tuple[Table, ...]:
-	"""Return the tables of an export package, in file order."""
-	return MVP_TABLES
+	"""Return the tables of an export package, in file order.
+
+	The scope is deliberately not configurable: the tax audit defines what it
+	needs, not the taxpayer (SPEC.md, stage 2).
+	"""
+	return ALL_TABLES
 
 
 def get_table(key: str) -> Table:

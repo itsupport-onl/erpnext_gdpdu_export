@@ -82,14 +82,22 @@ Journal und Kontenplan selbstverständlich enthalten.
 | `kreditoren.csv` | Supplier (+ primäre Adresse) | Kreditorenstamm: analog |
 | `steuerkennzeichen.csv` | Account (Tax) + Tax Templates | verwendete Steuerkonten mit Steuersatz |
 
-### Tabellen (Stufe 2)
+### Tabellen (Stufe 2) — umgesetzt, fester Bestandteil jedes Exports
 
 | CSV | Quelle | Inhalt |
 |---|---|---|
 | `ausgangsrechnungen.csv` / `_positionen.csv` | Sales Invoice (+ Items) | Belegebene inkl. Positionen, Steuerbeträge |
-| `eingangsrechnungen.csv` / `_positionen.csv` | Purchase Invoice (+ Items) | analog |
-| `zahlungen.csv` | Payment Entry | Zahlungsverkehr mit Zuordnung |
-| `opos_debitoren.csv` / `opos_kreditoren.csv` | AR/AP-Report zum Stichtag | offene Posten |
+| `eingangsrechnungen.csv` / `_positionen.csv` | Purchase Invoice (+ Items) | analog, zusätzlich Lieferantenbelegnummer |
+| `zahlungen.csv` | Payment Entry | Zahlungsverkehr |
+| `zahlungszuordnungen.csv` | Payment Entry Reference | welche Zahlung welchen Beleg ausgleicht |
+| `opos_debitoren.csv` / `opos_kreditoren.csv` | GL Entry zum Stichtag | offene Posten, aus dem Journal gerechnet |
+
+**Keine Abwahlmöglichkeit** (Entscheidung 01.08.2026): Die GoBD (Rz. 159)
+verlangen die Daten der Finanzbuchhaltung und aller Vor- und Nebensysteme mit
+aufbewahrungspflichtigen Unterlagen; Rechnungen sind nach § 147 Abs. 1 AO
+aufbewahrungspflichtig. Den Umfang bestimmt die Prüfung, nicht der
+Steuerpflichtige — eine Checkbox wäre für nicht-technische Anwender ein Risiko.
+Tabellen ohne Daten werden als CSV mit reiner Kopfzeile geschrieben.
 
 ### Verknüpfungen (ForeignKeys in index.xml)
 
@@ -108,7 +116,8 @@ Ein SKR03/04-Mapping ist bewusst **nicht** Teil des Scopes (Ausbaustufe).
 ## 4. Architektur
 
 Frappe-App nach dem Muster von `qonto_banking` (gleiche Repo-Struktur, CI,
-pre-commit, SPEC.md). ERPNext **v15**, v16-Kompatibilität im Blick. Keine
+pre-commit, SPEC.md). ERPNext **v15 und v16** (beide verprobt, siehe
+KOMPATIBILITAET.md). Keine
 Python-Abhängigkeiten außerhalb des Frappe-Frameworks (Standardbibliothek: `csv`,
 `xml.etree`/manuelle Serialisierung, `zipfile`).
 
@@ -116,7 +125,7 @@ Python-Abhängigkeiten außerhalb des Frappe-Frameworks (Standardbibliothek: `cs
 
 1. **GDPdU Export** (submittable=nein, normales Dokument)
    - Filter: Company (Pflicht), Zeitraum von/bis (Pflicht, Default: letztes
-     abgeschlossenes Geschäftsjahr), Umfangsoptionen (Checkboxen je Stufe-2-Tabelle)
+     abgeschlossenes Geschäftsjahr); **kein Umfangsschalter**, siehe §3
    - Statusfeld: Draft → In Progress → Completed / Failed
    - Ergebnis: ZIP als **privates** File-Attachment + Prüfprotokoll
      (Zeilenzahlen je Tabelle, Summen Soll/Haben, Warnungen)

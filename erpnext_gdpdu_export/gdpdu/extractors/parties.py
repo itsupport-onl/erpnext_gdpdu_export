@@ -1,8 +1,10 @@
 """debitoren.csv and kreditoren.csv — customer and supplier master data (SPEC.md).
 
-Only parties with a journal movement in the period are exported: they are the
-ones the journal refers to, and exporting the full address book would hand out
-more personal data than the tax audit requires.
+Exported are the parties the export actually refers to: those with a journal
+movement in the period plus those with an open item at the key date. Exporting
+the full address book would hand out more personal data than the tax audit
+requires; leaving out the open-item parties would leave those references
+unresolvable.
 """
 
 from __future__ import annotations
@@ -11,6 +13,7 @@ from collections.abc import Iterator
 
 import frappe
 
+from . import open_items
 from .base import ExtractionContext
 
 CUSTOMER_TABLE_KEY = "customers"
@@ -49,7 +52,7 @@ def iter_suppliers(ctx: ExtractionContext) -> Iterator[dict]:
 
 
 def _iter_parties(ctx: ExtractionContext, party_type: str, name_field: str) -> Iterator[dict]:
-	parties = _parties_in_period(ctx, party_type)
+	parties = _relevant_parties(ctx, party_type)
 	if not parties:
 		return
 
@@ -87,7 +90,7 @@ def _iter_parties(ctx: ExtractionContext, party_type: str, name_field: str) -> I
 		}
 
 
-def _parties_in_period(ctx: ExtractionContext, party_type: str) -> list[str]:
+def _relevant_parties(ctx: ExtractionContext, party_type: str) -> list[str]:
 	rows = frappe.db.sql(
 		_PARTIES_IN_PERIOD,
 		{
@@ -98,7 +101,9 @@ def _parties_in_period(ctx: ExtractionContext, party_type: str) -> list[str]:
 		},
 		as_dict=True,
 	)
-	return [row.party for row in rows]
+	parties = {row.party for row in rows}
+	parties |= open_items.get_parties_with_open_items(ctx, party_type)
+	return sorted(parties)
 
 
 def _party_details(party_type: str, name_field: str, parties: list[str]) -> dict[str, dict]:

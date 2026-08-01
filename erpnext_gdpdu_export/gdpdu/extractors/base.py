@@ -16,6 +16,25 @@ from ..protocol import Protocol
 DEFAULT_CHUNK_SIZE = 5000
 
 
+def iter_chunks(query: str, params: dict, chunk_size: int):
+	"""Yield rows of ``query`` in chunks; the query must be written without LIMIT."""
+	start = 0
+	while True:
+		batch = frappe.db.sql(
+			f"{query} LIMIT {int(chunk_size)} OFFSET {int(start)}",
+			params,
+			as_dict=True,
+		)
+		if not batch:
+			return
+
+		yield from batch
+
+		if len(batch) < chunk_size:
+			return
+		start += chunk_size
+
+
 @dataclass
 class AccountInfo:
 	"""One account of the chart of accounts, including the exported key."""
@@ -39,6 +58,8 @@ class ExtractionContext:
 	currency: str
 	protocol: Protocol
 	chunk_size: int = DEFAULT_CHUNK_SIZE
+	#: Shared between extractors, e.g. the open items are needed by two tables.
+	cache: dict = field(default_factory=dict, repr=False)
 	_accounts: dict[str, AccountInfo] | None = field(default=None, repr=False)
 
 	def accounts(self) -> dict[str, AccountInfo]:
