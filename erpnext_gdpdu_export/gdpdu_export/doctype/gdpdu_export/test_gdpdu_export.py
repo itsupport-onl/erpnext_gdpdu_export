@@ -409,6 +409,7 @@ class TestGDPdUExport(AppTestCase):
 def create_fixtures() -> str:
 	"""Create everything the tests need and return the fiscal year covering today."""
 	fiscal_year = ensure_fiscal_year()
+	ensure_party_types()
 	create_company()
 	accounts = {row[0]: create_account(row) for row in ACCOUNTS}
 	create_party("Customer", CUSTOMER, "DE123456789")
@@ -439,6 +440,37 @@ def create_item() -> str:
 		}
 	).insert()
 	return ITEM
+
+
+def ensure_party_types() -> None:
+	"""ERPNext compares the party type with the account type when booking.
+
+	Without a completed setup wizard the Party Type records carry no account
+	type, and every posting against a customer or supplier account fails.
+	"""
+	for party_type, account_type in (("Customer", "Receivable"), ("Supplier", "Payable")):
+		if not frappe.db.exists("Party Type", party_type):
+			frappe.get_doc(
+				{"doctype": "Party Type", "party_type": party_type, "account_type": account_type}
+			).insert()
+		elif frappe.db.get_value("Party Type", party_type, "account_type") != account_type:
+			frappe.db.set_value("Party Type", party_type, "account_type", account_type)
+
+
+def ensure_address_template() -> None:
+	"""Frappe refuses to save an address without a default template."""
+	if frappe.db.exists("Address Template", {"is_default": 1}):
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Address Template",
+			"country": frappe.db.get_value("Country", "Germany", "name")
+			or frappe.db.get_value("Country", {}, "name"),
+			"is_default": 1,
+			"template": "{{ address_line1 }}<br>{{ pincode }} {{ city }}<br>{{ country }}",
+		}
+	).insert()
 
 
 def ensure_warehouse_types() -> None:
@@ -821,6 +853,8 @@ def create_party(doctype: str, name: str, tax_id: str) -> None:
 
 	if frappe.db.exists("Address", {"address_title": name}):
 		return
+
+	ensure_address_template()
 
 	frappe.get_doc(
 		{
