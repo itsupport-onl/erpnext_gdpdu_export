@@ -1,0 +1,48 @@
+name: Funktion vorschlagen
+description: Etwas fehlt für eine Betriebsprüfung oder den Arbeitsalltag.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Besonders hilfreich: Rückmeldungen aus echten Prüfungen — was ein Prüfer
+        zusätzlich verlangt hat oder was er am Paket bemängelt hat.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+      description: Was geht heute nicht oder nur umständlich?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Vorschlag
+      description: >
+        Bei zusätzlichen Daten bitte möglichst konkret: welche Tabelle, welche Spalten,
+        aus welchen ERPNext-Feldern.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Wem hilft das?
+      multiple: true
+      options:
+        - Prüfer der Finanzverwaltung
+        - Steuerberater
+        - Buchhaltung im Unternehmen
+        - Administration / Betrieb
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Fundstelle
+      description: >
+        Falls es auf einer Vorschrift oder einer Prüferanforderung beruht: GoBD-Randziffer,
+        Beschreibungsstandard-Abschnitt oder Wortlaut der Anfrage.

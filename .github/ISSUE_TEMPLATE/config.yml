@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Sicherheitslücke
+    url: https://github.com/itsupport-onl/erpnext_gdpdu_export/security/advisories/new
+    about: Sicherheitsprobleme bitte privat melden — niemals in einem öffentlichen Issue.
+  - name: Kommerzieller Support
+    url: https://itsupport.online/
+    about: Einrichtung, Betrieb, Prüfungsbegleitung durch itsupport.online.
+  - name: Beschreibungsstandard und IDEA
+    url: https://www.caseware.net/de/idea/
+    about: Fragen zum Beschreibungsstandard oder zur Prüfsoftware selbst.

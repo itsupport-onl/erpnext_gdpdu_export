@@ -1,11 +1,32 @@
 [project]
 name = "erpnext_gdpdu_export"
-authors = [{ name = "itsupport.online", email = "tickets@itsupport.onl" }]
+authors = [
+	{ name = "itsupport.online", email = "tickets@itsupport.onl" },
+]
 description = "GoBD/GDPdU export (Datentraegerueberlassung, Audicon Beschreibungsstandard 1.6) for ERPNext accounting data"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
-dependencies = []
+license = { file = "license.txt" }
+keywords = ["frappe", "erpnext", "gdpdu", "gobd", "betriebspruefung", "idea", "accounting"]
+classifiers = [
+	"Framework :: Frappe",
+	"Intended Audience :: Developers",
+	"Intended Audience :: Financial and Insurance Industry",
+	"License :: OSI Approved :: GNU Affero General Public License v3",
+	"Natural Language :: German",
+	"Programming Language :: Python :: 3",
+]
+dependencies = [
+	# Nothing beyond what Frappe already ships (lxml is part of the Frappe stack).
+]
+
+[project.urls]
+Homepage = "https://github.com/itsupport-onl/erpnext_gdpdu_export"
+Support = "https://itsupport.online/"
+Source = "https://github.com/itsupport-onl/erpnext_gdpdu_export"
+Issues = "https://github.com/itsupport-onl/erpnext_gdpdu_export/issues"
+Changelog = "https://github.com/itsupport-onl/erpnext_gdpdu_export/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]

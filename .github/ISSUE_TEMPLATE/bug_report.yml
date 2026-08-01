@@ -1,0 +1,62 @@
+name: Fehler melden
+description: Etwas funktioniert nicht wie beschrieben.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Bitte keine echten Buchhaltungs- oder Personendaten anhängen** — kein
+        Export-Paket, keine Kontenpläne, keine Namen, Anschriften oder USt-IdNrn.
+        Anonymisierte Auszüge genügen. Siehe [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Version der App
+      description: Steht im Export-Dokument unter „Technische Details" oder in `__init__.py`.
+      placeholder: '0.0.1'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: erpnext-version
+    attributes:
+      label: ERPNext-Version
+      options:
+        - v15
+        - v16
+        - andere (bitte unten nennen)
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Was ist passiert?
+      description: Was haben Sie getan, und was kam dabei heraus?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Was haben Sie erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Prüfprotokoll oder Fehlermeldung
+      description: >
+        Auszug aus dem Prüfprotokoll, die Fehlermeldung im Export-Dokument oder der
+        Eintrag aus dem Fehlerprotokoll (Error Log) — bitte vorher durchsehen.
+      render: text
+
+  - type: checkboxes
+    id: no-real-data
+    attributes:
+      label: Bestätigung
+      options:
+        - label: Dieses Issue enthält keine echten Buchhaltungs- oder Personendaten.
+          required: true
