@@ -46,14 +46,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Python- und Node-Version wie im offiziellen Image der jeweiligen
+          # Version: frappe v16 verlangt Python >=3.14,<3.15.
           - frappe-branch: version-15
             python-version: '3.11'
-            node-version: '18'
+            node-version: '20'
             mariadb: '10.6'
             site-flags: --no-mariadb-socket
           - frappe-branch: version-16
-            python-version: '3.12'
-            node-version: '20'
+            python-version: '3.14'
+            node-version: '24'
             mariadb: '11.8'
             site-flags: --mariadb-user-host-login-scope=%
 
@@ -122,7 +124,16 @@ jobs:
       - name: Install erpnext_gdpdu_export from this checkout
         run: |
           cd ~/frappe-bench
-          bench get-app erpnext_gdpdu_export "$GITHUB_WORKSPACE"
+          # --skip-assets: die App bringt keine Frontend-Assets mit, der
+          # yarn-Build waere nur Laufzeit und schlaegt auf dem Runner fehl.
+          bench get-app --skip-assets erpnext_gdpdu_export "$GITHUB_WORKSPACE"
+          # Je nach bench-Version registriert --skip-assets die App nicht in
+          # apps.txt; ohne Eintrag verweigert install-app den Dienst. Die Datei
+          # endet nicht zwingend mit einem Zeilenumbruch, deshalb neu schreiben.
+          { cat sites/apps.txt; printf '\n%s\n' erpnext_gdpdu_export; } \
+            | awk 'NF && !seen[$0]++' > /tmp/apps.txt
+          mv /tmp/apps.txt sites/apps.txt
+          cat sites/apps.txt
 
       - name: Create test site
         run: |

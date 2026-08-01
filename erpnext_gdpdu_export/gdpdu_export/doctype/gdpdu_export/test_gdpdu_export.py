@@ -409,6 +409,7 @@ class TestGDPdUExport(AppTestCase):
 def create_fixtures() -> str:
 	"""Create everything the tests need and return the fiscal year covering today."""
 	fiscal_year = ensure_fiscal_year()
+	ensure_party_types()
 	create_company()
 	accounts = {row[0]: create_account(row) for row in ACCOUNTS}
 	create_party("Customer", CUSTOMER, "DE123456789")
@@ -431,8 +432,7 @@ def create_item() -> str:
 			"doctype": "Item",
 			"item_code": ITEM,
 			"item_name": ITEM,
-			"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-			or frappe.db.get_value("Item Group", {}, "name"),
+			"item_group": _item_group(),
 			"stock_uom": _uom(),
 			"is_stock_item": 0,
 			"is_sales_item": 1,
@@ -442,8 +442,72 @@ def create_item() -> str:
 	return ITEM
 
 
+def ensure_party_types() -> None:
+	"""ERPNext compares the party type with the account type when booking.
+
+	Without a completed setup wizard the Party Type records carry no account
+	type, and every posting against a customer or supplier account fails.
+	"""
+	for party_type, account_type in (("Customer", "Receivable"), ("Supplier", "Payable")):
+		if not frappe.db.exists("Party Type", party_type):
+			frappe.get_doc(
+				{"doctype": "Party Type", "party_type": party_type, "account_type": account_type}
+			).insert()
+		elif frappe.db.get_value("Party Type", party_type, "account_type") != account_type:
+			frappe.db.set_value("Party Type", party_type, "account_type", account_type)
+
+
+def ensure_address_template() -> None:
+	"""Frappe refuses to save an address without a default template."""
+	if frappe.db.exists("Address Template", {"is_default": 1}):
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Address Template",
+			"country": frappe.db.get_value("Country", "Germany", "name")
+			or frappe.db.get_value("Country", {}, "name"),
+			"is_default": 1,
+			"template": "{{ address_line1 }}<br>{{ pincode }} {{ city }}<br>{{ country }}",
+		}
+	).insert()
+
+
+def ensure_warehouse_types() -> None:
+	"""ERPNext creates default warehouses together with the company.
+
+	Those need the warehouse type "Transit", which a site without a completed
+	setup wizard does not have — for instance a fresh CI site.
+	"""
+	if not frappe.db.exists("Warehouse Type", "Transit"):
+		frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert()
+
+
 def _uom() -> str:
-	return frappe.db.get_value("UOM", {"name": "Nos"}, "name") or frappe.db.get_value("UOM", {}, "name")
+	existing = frappe.db.get_value("UOM", {"name": "Nos"}, "name") or frappe.db.get_value("UOM", {}, "name")
+	if existing:
+		return existing
+
+	return frappe.get_doc({"doctype": "UOM", "uom_name": "Nos"}).insert().name
+
+
+def _item_group() -> str:
+	"""A leaf item group; a bare site may not have the standard tree."""
+	existing = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+	if existing:
+		return existing
+
+	group = frappe.get_doc(
+		{
+			"doctype": "Item Group",
+			"item_group_name": "_Test GDPdU Warengruppe",
+			"is_group": 0,
+		}
+	)
+	parent = frappe.db.get_value("Item Group", {"is_group": 1}, "name")
+	if parent:
+		group.parent_item_group = parent
+	return group.insert().name
 
 
 def _cost_center() -> str:
@@ -652,8 +716,7 @@ def _ensure_asset_item() -> None:
 			"doctype": "Item",
 			"item_code": ASSET_ITEM,
 			"item_name": ASSET_ITEM,
-			"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-			or frappe.db.get_value("Item Group", {}, "name"),
+			"item_group": _item_group(),
 			"stock_uom": _uom(),
 			"is_stock_item": 0,
 			"is_fixed_asset": 1,
@@ -731,6 +794,8 @@ def create_company() -> None:
 	if frappe.db.exists("Company", COMPANY):
 		return
 
+	ensure_warehouse_types()
+
 	frappe.get_doc(
 		{
 			"doctype": "Company",
@@ -788,6 +853,8 @@ def create_party(doctype: str, name: str, tax_id: str) -> None:
 
 	if frappe.db.exists("Address", {"address_title": name}):
 		return
+
+	ensure_address_template()
 
 	frappe.get_doc(
 		{
