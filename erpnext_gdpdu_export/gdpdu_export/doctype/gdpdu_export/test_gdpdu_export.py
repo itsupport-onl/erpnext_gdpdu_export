@@ -431,8 +431,7 @@ def create_item() -> str:
 			"doctype": "Item",
 			"item_code": ITEM,
 			"item_name": ITEM,
-			"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-			or frappe.db.get_value("Item Group", {}, "name"),
+			"item_group": _item_group(),
 			"stock_uom": _uom(),
 			"is_stock_item": 0,
 			"is_sales_item": 1,
@@ -442,8 +441,41 @@ def create_item() -> str:
 	return ITEM
 
 
+def ensure_warehouse_types() -> None:
+	"""ERPNext creates default warehouses together with the company.
+
+	Those need the warehouse type "Transit", which a site without a completed
+	setup wizard does not have — for instance a fresh CI site.
+	"""
+	if not frappe.db.exists("Warehouse Type", "Transit"):
+		frappe.get_doc({"doctype": "Warehouse Type", "name": "Transit"}).insert()
+
+
 def _uom() -> str:
-	return frappe.db.get_value("UOM", {"name": "Nos"}, "name") or frappe.db.get_value("UOM", {}, "name")
+	existing = frappe.db.get_value("UOM", {"name": "Nos"}, "name") or frappe.db.get_value("UOM", {}, "name")
+	if existing:
+		return existing
+
+	return frappe.get_doc({"doctype": "UOM", "uom_name": "Nos"}).insert().name
+
+
+def _item_group() -> str:
+	"""A leaf item group; a bare site may not have the standard tree."""
+	existing = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+	if existing:
+		return existing
+
+	group = frappe.get_doc(
+		{
+			"doctype": "Item Group",
+			"item_group_name": "_Test GDPdU Warengruppe",
+			"is_group": 0,
+		}
+	)
+	parent = frappe.db.get_value("Item Group", {"is_group": 1}, "name")
+	if parent:
+		group.parent_item_group = parent
+	return group.insert().name
 
 
 def _cost_center() -> str:
@@ -652,8 +684,7 @@ def _ensure_asset_item() -> None:
 			"doctype": "Item",
 			"item_code": ASSET_ITEM,
 			"item_name": ASSET_ITEM,
-			"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-			or frappe.db.get_value("Item Group", {}, "name"),
+			"item_group": _item_group(),
 			"stock_uom": _uom(),
 			"is_stock_item": 0,
 			"is_fixed_asset": 1,
@@ -730,6 +761,8 @@ def ensure_fiscal_year() -> str:
 def create_company() -> None:
 	if frappe.db.exists("Company", COMPANY):
 		return
+
+	ensure_warehouse_types()
 
 	frappe.get_doc(
 		{
