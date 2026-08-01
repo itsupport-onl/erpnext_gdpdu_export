@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-01 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_dtd",
+  "dtd_help",
+  "dtd_file",
+  "section_defaults",
+  "default_company"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_dtd",
+   "fieldtype": "Section Break",
+   "label": "Beschreibungs-DTD"
+  },
+  {
+   "fieldname": "dtd_help",
+   "fieldtype": "HTML",
+   "label": "Hinweis",
+   "options": "<div class=\"alert alert-info\" style=\"font-size:12px\"><b>Einmalige Einrichtung:</b> Der Beschreibungsstandard verlangt, dass die Datei <code>gdpdu-01-08-2002.dtd</code> auf jedem Datenträger neben der <code>index.xml</code> liegt. Sie gehört der Audicon GmbH und darf dieser Open-Source-App nicht beigelegt werden.<br><br>Laden Sie die Datei einmalig hier hoch – sie wird dann automatisch jedem Export beigelegt. Sie finden die DTD im Beschreibungsstandard der Audicon GmbH oder in jedem GoBD-Export einer anderen Buchhaltungssoftware.<br><br>Ohne diese Datei funktioniert der Export weiterhin, das Paket ist aber unvollständig; das Prüfprotokoll weist dann darauf hin.</div>"
+  },
+  {
+   "fieldname": "dtd_file",
+   "fieldtype": "Attach",
+   "label": "Datei gdpdu-01-08-2002.dtd"
+  },
+  {
+   "fieldname": "section_defaults",
+   "fieldtype": "Section Break",
+   "label": "Vorbelegung"
+  },
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Standard-Unternehmen",
+   "options": "Company",
+   "description": "Wird bei neuen Exporten vorgeschlagen. Leer lassen, um das Standard-Unternehmen des Benutzers zu verwenden."
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "GDPdU Export",
+ "name": "GDPdU Export Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Accounts Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,252 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-08-01 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "section_period",
+  "company",
+  "period_type",
+  "fiscal_year",
+  "column_break_period",
+  "from_date",
+  "to_date",
+  "section_scope",
+  "scope_html",
+  "section_result",
+  "status",
+  "export_file",
+  "error_message",
+  "section_protocol",
+  "protocol_display",
+  "protocol_html",
+  "section_technical",
+  "started_at",
+  "finished_at",
+  "journal_rows",
+  "column_break_technical",
+  "app_version",
+  "dtd_included",
+  "package_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Nummernkreis",
+   "no_copy": 1,
+   "options": "GOBD-.YYYY.-",
+   "default": "GOBD-.YYYY.-",
+   "print_hide": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "section_period",
+   "fieldtype": "Section Break",
+   "label": "1. Unternehmen und Zeitraum"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Unternehmen",
+   "options": "Company",
+   "reqd": 1,
+   "description": "Die Buchhaltung dieses Unternehmens wird exportiert."
+  },
+  {
+   "fieldname": "period_type",
+   "fieldtype": "Select",
+   "label": "Zeitraum festlegen über",
+   "options": "Geschäftsjahr\nBenutzerdefiniert",
+   "default": "Geschäftsjahr",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.period_type=='Geschäftsjahr'",
+   "fieldname": "fiscal_year",
+   "fieldtype": "Link",
+   "label": "Geschäftsjahr",
+   "mandatory_depends_on": "eval:doc.period_type=='Geschäftsjahr'",
+   "options": "Fiscal Year",
+   "description": "Das Von-/Bis-Datum wird automatisch gesetzt."
+  },
+  {
+   "fieldname": "column_break_period",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Von",
+   "read_only_depends_on": "eval:doc.period_type=='Geschäftsjahr'",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Bis",
+   "read_only_depends_on": "eval:doc.period_type=='Geschäftsjahr'",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_scope",
+   "fieldtype": "Section Break",
+   "label": "2. Was wird exportiert?"
+  },
+  {
+   "fieldname": "scope_html",
+   "fieldtype": "HTML",
+   "label": "Umfang"
+  },
+  {
+   "fieldname": "section_result",
+   "fieldtype": "Section Break",
+   "label": "3. Ergebnis"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "no_copy": 1,
+   "options": "Entwurf\nIn Warteschlange\nLäuft\nFertig\nFehlgeschlagen",
+   "default": "Entwurf",
+   "read_only": 1
+  },
+  {
+   "fieldname": "export_file",
+   "fieldtype": "Attach",
+   "label": "Export-Paket (ZIP)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.status=='Fehlgeschlagen'",
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Fehlermeldung",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.protocol_html",
+   "fieldname": "section_protocol",
+   "fieldtype": "Section Break",
+   "label": "Prüfprotokoll"
+  },
+  {
+   "fieldname": "protocol_display",
+   "fieldtype": "HTML",
+   "label": "Prüfprotokoll"
+  },
+  {
+   "fieldname": "protocol_html",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Prüfprotokoll (HTML)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_technical",
+   "fieldtype": "Section Break",
+   "label": "Technische Details"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Gestartet am",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "Beendet am",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "journal_rows",
+   "fieldtype": "Int",
+   "label": "Buchungszeilen im Paket",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_technical",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "label": "App-Version",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "dtd_included",
+   "fieldtype": "Check",
+   "label": "DTD im Paket enthalten",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "package_name",
+   "fieldtype": "Data",
+   "label": "Dateiname",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-01 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "GDPdU Export",
+ "name": "GDPdU Export",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

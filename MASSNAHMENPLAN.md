@@ -35,6 +35,10 @@ erpnext_gdpdu_export` läuft fehlerfrei durch.
 **DoD:** `bench run-tests --app erpnext_gdpdu_export` grün; generierte index.xml
 validiert gegen die DTD (Test mit lxml, DTD aus `resources/`).
 
+**Status: erledigt.** Elementreihenfolge aus der Original-DTD in SPEC.md
+dokumentiert und im Generator umgesetzt; Unit-Tests laufen zusätzlich ohne Site
+(`python -m unittest discover -s erpnext_gdpdu_export/tests -t .`).
+
 ## Phase 2 — Datenextraktion (MVP-Tabellen)
 
 1. `gdpdu/extractors/` — je Tabelle ein Extractor mit einheitlichem Interface
@@ -51,6 +55,10 @@ validiert gegen die DTD (Test mit lxml, DTD aus `resources/`).
 
 **DoD:** Alle Extractor-Tests grün; Soll=Haben-Invariante im Test nachgewiesen.
 
+**Status: erledigt.** Journal mit Keyset-Pagination (5.000 Zeilen je Abfrage);
+Debitoren/Kreditoren nur mit Bewegung im Zeitraum; Warnungen für fehlende
+Kontonummern, doppelte Kontoschlüssel, fehlende Anschriften und Steuersätze.
+
 ## Phase 3 — DocType, Background Job, Paketierung
 
 1. DocType **GDPdU Export** lt. KONZEPT.md §4 (Felder, Status, Rollen:
@@ -65,7 +73,14 @@ validiert gegen die DTD (Test mit lxml, DTD aus `resources/`).
 **DoD:** Im Desk: Export anlegen, erstellen, ZIP herunterladen; Paket enthält
 index.xml (DTD-valide), DTD, alle MVP-CSVs; Protokoll zeigt plausible Zahlen.
 
-## Phase 4 — Stufe-2-Tabellen (optional zuschaltbar)
+**Status: erledigt.** Auf einer ERPNext-v15-Site (Docker) durchgespielt: Export
+im Desk angelegt, Hintergrund-Job erzeugt, Status wechselt selbsttätig auf
+„Fertig", ZIP enthält index.xml (gegen die Original-DTD validiert), DTD, alle
+fünf MVP-CSVs, Prüfprotokoll und LIESMICH; Soll = Haben im Protokoll.
+Zusätzlich: DTD-Upload in den Settings, Arbeitsbereich, Statusfarben in der
+Liste, Polling-Fallback für Setups ohne Websocket.
+
+## Phase 4 — Stufe-2-Tabellen (optional zuschaltbar)  *(nächster Schritt)*
 
 1. Extractors + Schemata: Ausgangs-/Eingangsrechnungen inkl. Positionen,
    Zahlungen, OPOS zum Stichtag (Checkboxen im DocType)
