@@ -82,7 +82,10 @@ index.xml (DTD-valide), DTD, alle MVP-CSVs; Protokoll zeigt plausible Zahlen.
 2. Offenen Punkt DTD-Redistribution entscheiden (KONZEPT.md §7.1)
 3. CHANGELOG, Version 0.1.0 taggen, CI final (Lint + Tests auf Frappe v15)
 4. Repo public stellen; GitHub Topics: erpnext, frappe, gdpdu, gobd,
-   betriebspruefung, idea, accounting, germany
+   betriebspruefung, idea, accounting, germany. In den ERPNext-Issues
+   frappe/erpnext#36344 (GDPdU report) und #19328 (Germany localization)
+   verlinken — dort sitzt die wartende Zielgruppe. Kurzer Blick auf das
+   Odoo-GoBD-Modul (initos) als Wettbewerbs-/Feature-Vergleich fürs README
 5. Community-Testphase: Export an Steuerberater/Prüfer zur IDEA-Verprobung;
    Ergebnis als Issue-Meilenstein „IDEA-verified" dokumentieren
 

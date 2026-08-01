@@ -17,9 +17,22 @@ Open-Source-Baustein.
 
 ## 2. Formatgrundlage
 
-Referenz: *Beschreibungsstandard für die Datenträgerüberlassung*, Audicon GmbH,
-Version 1.6 (01.03.2019).
-https://www.caseware.net/fileadmin/audicon/media/allgemeine_bilder/Beschreibungsstandard-GDPdU-01-03-2019.pdf
+Referenzen:
+- *Beschreibungsstandard für die Datenträgerüberlassung*, Audicon GmbH, Version 1.6
+  (01.03.2019): https://www.caseware.net/fileadmin/audicon/media/allgemeine_bilder/Beschreibungsstandard-GDPdU-01-03-2019.pdf
+  (Portal: https://www.caseware.net/ihr-know-how-portal-zum-beschreibungsstandard/)
+- BMF, *GoBD* vom 28.11.2019 (Rz. 156 ff.: Datenzugriff) und BMF, *Ergänzende
+  Informationen zur Datenträgerüberlassung* (14.11.2014) — offizielle Primärquellen
+  der Finanzverwaltung zur Datensatzbeschreibung
+- DSAG-Handlungsempfehlung GoBD/GDPdU v4.01 (Praxis-/Prüfungssicht):
+  https://www.dsag.de/wp-content/uploads/2021/12/dsag_handlungsempfehlung_gobd_gdpdu_v4.01_0.pdf
+- ERPNext-Community-Bedarf: https://github.com/frappe/erpnext/issues/36344 und
+  Sammel-Issue Germany Localization #19328
+
+Hinweis zur Verbindlichkeit: Das XML-Beschreibungsformat ist für Steuerpflichtige
+nicht gesetzlich bindend; es ist der vom BMF zur Automatisierung der
+IDEA-Schnittstelle propagierte und praktisch etablierte Standard. Diese App setzt
+ihn bewusst als De-facto-Standard um.
 
 Ein Exportpaket (ZIP) enthält:
 
@@ -132,8 +145,9 @@ Benutzer legt „GDPdU Export" an → wählt Company + Zeitraum → „Export er
 - Zugriff auf DocType und Downloads: nur **System Manager** und **Accounts Manager**
 - Export-ZIP immer als *private* File (kein anonymer URL-Zugriff)
 - Der Export enthält personenbezogene Daten (Namen, Adressen, USt-IdNrn.) —
-  README weist auf DSGVO-gerechte Übergabe hin (verschlüsselter Transport an den
-  Prüfer liegt in Verantwortung des Nutzers)
+  README weist auf DSGVO-gerechte Übergabe hin; auch die DSAG-Handlungsempfehlung
+  rät, Datenträger nur verschlüsselt zu übergeben (Verschlüsselung/Transport an
+  den Prüfer liegt in Verantwortung des Nutzers, vgl. GoBD Rz. 167 f.)
 - Nur Lesezugriff auf Buchhaltungsdaten; die App bucht, ändert und löscht nichts
   („What it will never do"-Abschnitt im README, analog qonto_banking)
 
@@ -154,9 +168,16 @@ Benutzer legt „GDPdU Export" an → wählt Company + Zeitraum → „Export er
 
 ## 6. Abgrenzung / Ausbaustufen
 
-Nicht im Scope (spätere Stufen): Lohnabrechnung/DLS, Anlagenbuchhaltung,
-SKR-Mapping, Festschreibungs-/Unveränderbarkeitsprüfungen,
-Verfahrensdokumentations-Template, Z1/Z2-Zugriff, DATEV-Export.
+Nicht im Scope (spätere Stufen): Lohnabrechnung/DLS, SKR-Mapping,
+Festschreibungs-/Unveränderbarkeitsprüfungen, Verfahrensdokumentations-Template,
+Z1/Z2-Zugriff, DATEV-Export.
+
+**Anlagenbuchhaltung (Stufe 3, priorisierte Ausbaustufe):** Die GoBD (Rz. 159)
+erwarten neben der Finanzbuchhaltung ausdrücklich auch die vollumfängliche
+Bereitstellung der Anlagenbuchhaltung. Für Nutzer des ERPNext-Asset-Moduls
+(Asset, Depreciation Schedule) ist ein Anlagen-Export daher prüfungsrelevant und
+wird nach Stufe 2 als nächstes umgesetzt. Bis dahin dokumentiert das README diese
+Lücke transparent.
 
 ## 7. Offene Punkte (vor v1.0 zu klären)
 
