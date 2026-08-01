@@ -1,25 +1,141 @@
 name: CI
+
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    name: Lint
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - run: pip install ruff && ruff check . && ruff format --check .
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
 
   unit:
-    # Formatkern (Schema, CSV, index.xml, Protokoll) — laeuft ohne Frappe-Site.
-    runs-on: ubuntu-latest
+    name: Formatkern (ohne Site)
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
       - run: pip install lxml
       - run: python -m unittest discover -s erpnext_gdpdu_export/tests -t .
 
-  # TODO vor v1.0: Frappe-Testjob (bench init + install-app + run-tests),
-  # als Matrix ueber ERPNext v15 und v16.
+  tests:
+    name: Server tests (frappe ${{ matrix.frappe-branch }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - frappe-branch: version-15
+            python-version: '3.11'
+            node-version: '18'
+            mariadb: '10.6'
+            site-flags: --no-mariadb-socket
+          - frappe-branch: version-16
+            python-version: '3.12'
+            node-version: '20'
+            mariadb: '11.8'
+            site-flags: --mariadb-user-host-login-scope=%
+
+    services:
+      mariadb:
+        image: mariadb:${{ matrix.mariadb }}
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          check-latest: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mariadb-client
+          npm install -g yarn
+
+      - name: Configure MariaDB
+        run: |
+          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+
+      - name: Install bench
+        run: pip install frappe-bench
+
+      - name: Init bench with frappe and erpnext
+        run: |
+          bench init --skip-redis-config-generation --frappe-branch ${{ matrix.frappe-branch }} ~/frappe-bench
+          cd ~/frappe-bench
+          bench set-config -g db_host 127.0.0.1
+          bench set-config -g redis_cache "redis://127.0.0.1:6379"
+          bench set-config -g redis_queue "redis://127.0.0.1:6379"
+          bench set-config -g redis_socketio "redis://127.0.0.1:6379"
+          bench get-app --branch ${{ matrix.frappe-branch }} erpnext
+
+      - name: Install erpnext_gdpdu_export from this checkout
+        run: |
+          cd ~/frappe-bench
+          bench get-app erpnext_gdpdu_export "$GITHUB_WORKSPACE"
+
+      - name: Create test site
+        run: |
+          cd ~/frappe-bench
+          bench new-site test_site \
+            --db-root-password root \
+            --admin-password admin \
+            ${{ matrix.site-flags }}
+          bench --site test_site install-app erpnext erpnext_gdpdu_export
+          bench --site test_site set-config allow_tests true
+          bench --site test_site set-config developer_mode 1
+
+      - name: Run tests
+        run: |
+          cd ~/frappe-bench
+          bench --site test_site run-tests --app erpnext_gdpdu_export

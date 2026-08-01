@@ -54,4 +54,19 @@ bench --site <site> run-tests --app erpnext_gdpdu_export
 ```
 
 Änderungen bitte gegen **ERPNext v15 und v16** prüfen; die bekannten
-Unterschiede stehen in [KOMPATIBILITAET.md](KOMPATIBILITAET.md).
+Unterschiede stehen in [KOMPATIBILITAET.md](KOMPATIBILITAET.md). Die CI führt
+beide Versionen als Matrix aus.
+
+## Issues und Pull Requests
+
+- Fehler und Vorschläge über die [Issue-Vorlagen](https://github.com/itsupport-onl/erpnext_gdpdu_export/issues/new/choose)
+- Sicherheitsprobleme **nicht** öffentlich melden — siehe [SECURITY.md](SECURITY.md)
+- **Niemals echte Buchhaltungs- oder Personendaten** in Issues, Pull Requests,
+  Tests oder Screenshots. Kein Export-Paket anhängen; anonymisierte Auszüge genügen
+- Umgangston: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
+## Lizenz der Beiträge
+
+Dieses Projekt steht unter der [AGPL-3.0](license.txt). Wer einen Pull Request
+einreicht, stellt seinen Beitrag unter dieselbe Lizenz. Bitte keinen Code
+beisteuern, dessen Lizenz das nicht zulässt.

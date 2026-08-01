@@ -35,6 +35,15 @@
   Erfassungszeiten würden sonst verschoben im Export stehen.
 
 ### Geändert
+- **Lizenz von MIT auf AGPL-3.0** umgestellt — einheitlich mit dem Schwester-Repo
+  `qonto_banking` und dem ERPNext-Ökosystem. Betrifft `license.txt`, `hooks.py`,
+  `pyproject.toml` und die README.
+- Repository nach dem Muster von `qonto_banking` überarbeitet: README mit Badges,
+  Entscheidungs- und Troubleshooting-Tabellen, ausführlichem Haftungsabschnitt und
+  kommerziellem Support; dazu SECURITY.md, CODE_OF_CONDUCT.md, Issue- und
+  PR-Vorlagen, dependabot, `.editorconfig` und `.gitattributes`.
+- CI führt die Server-Tests jetzt als Matrix über ERPNext v15 und v16 aus, zusätzlich
+  zu Lint und dem Formatkern ohne Site.
 - SPEC.md präzisiert: Elementreihenfolge der DTD, Schlüsselspalten zuerst,
   kein ForeignKey auf `Gegenpartei` (dynamisch Debitor/Kreditor), Umgang mit
   doppelten Kontoschlüsseln, Paketinhalt.
