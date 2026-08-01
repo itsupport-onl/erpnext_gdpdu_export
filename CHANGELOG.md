@@ -25,6 +25,10 @@
   Zahlungen mit Zuordnung zum ausgeglichenen Beleg sowie offene Posten der
   Debitoren und Kreditoren zum Stichtag (aus dem Journal über `against_voucher`
   gerechnet, nicht aus dem tagesaktuellen Saldo). Insgesamt 13 Tabellen.
+- **Stufe 3 — Anlagenbuchhaltung:** Anlagenverzeichnis zum Stichtag
+  (Anschaffungskosten, Abschreibungsparameter, kumulierte Abschreibung,
+  Buchwert, Konten der Anlagenklasse) und Abschreibungszeilen des Zeitraums
+  mit Kennzeichen, ob sie bereits gebucht sind. Insgesamt 15 Tabellen.
 - Kompatibilität mit **ERPNext/Frappe v15 und v16** aus einer Codebasis, beide
   Versionen vollständig verprobt (siehe KOMPATIBILITAET.md).
 - Prüfprotokoll warnt, wenn die Systemzeitzone außerhalb Europas liegt —
@@ -43,7 +47,7 @@
 
 ### Bekannt
 - Noch keine Verprobung mit IDEA (Phase 5).
-- Anlagenbuchhaltung fehlt noch (nächster Ausbauschritt).
+- Lohnabrechnungsdaten bleiben außen vor (dafür gibt es die DLS).
 
 ## Phase 0
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 
-from . import accounts, invoices, journal, open_items, parties, payments, taxes
+from . import accounts, assets, invoices, journal, open_items, parties, payments, taxes
 from .base import DEFAULT_CHUNK_SIZE, AccountInfo, ExtractionContext
 
 EXTRACTORS: dict[str, Callable[[ExtractionContext], Iterator[dict]]] = {
@@ -27,6 +27,9 @@ EXTRACTORS: dict[str, Callable[[ExtractionContext], Iterator[dict]]] = {
 	"payment_allocations": payments.iter_allocations,
 	"open_items_customers": open_items.iter_customers,
 	"open_items_suppliers": open_items.iter_suppliers,
+	# Anlagenbuchhaltung
+	"assets": assets.iter_assets,
+	"depreciations": assets.iter_depreciations,
 }
 
 

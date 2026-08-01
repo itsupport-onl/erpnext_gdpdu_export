@@ -95,6 +95,21 @@ der Umfang ist nicht Wahl des Steuerpflichtigen (Begründung in KONZEPT.md §3).
 aus dem Journal zum Stichtag gerechnet (`against_voucher`), nicht aus dem
 tagesaktuellen Saldo.
 
+## Phase 4b — Anlagenbuchhaltung (Stufe 3)
+
+1. Schemata + Extractor: Anlagenverzeichnis zum Stichtag und Abschreibungszeilen
+   des Zeitraums, Konten aus der Anlagenklasse
+2. Tests analog Phase 4
+
+**DoD:** Anlagentabellen im Vollpaket, DTD-valide, Tests grün.
+
+**Status: erledigt.** 15 Tabellen im Paket. Der Buchwert wird zum Stichtag aus
+Anschaffungskosten und tatsächlich gebuchter Abschreibung gerechnet; geplante,
+noch nicht gebuchte Zeilen sind über die Spalte `Gebucht` erkennbar. ERPNext hat
+das Feld der Anschaffungskosten zwischen v15 (`gross_purchase_amount`) und v16
+(`net_purchase_amount`) umbenannt — der Extractor ermittelt es zur Laufzeit.
+94 Tests grün auf v15 und v16.
+
 ## Phase 5 — Doku, Recht, Release
 
 1. README final (deutsch): Zweck, „Was die App nie tut", Setup, Bedienung,

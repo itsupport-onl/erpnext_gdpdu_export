@@ -88,6 +88,8 @@ große Journale einige Minuten.
 | `zahlungen.csv` | Zahlungsein- und -ausgänge |
 | `zahlungszuordnungen.csv` | welche Zahlung welche Rechnung ausgleicht |
 | `opos_debitoren.csv` / `opos_kreditoren.csv` | offene Posten zum Ende des Zeitraums |
+| `anlagegueter.csv` | Anlagenverzeichnis mit Anschaffungskosten, Abschreibung und Buchwert |
+| `abschreibungen.csv` | Abschreibungen des Zeitraums je Anlage |
 | `pruefprotokoll.txt` | Zeilenzahlen, Summen, Hinweise zu diesem Export |
 | `LIESMICH.txt` | Klartext-Erläuterung für Anwender und Prüfer |
 
@@ -131,8 +133,6 @@ liegen in Ihrer Verantwortung.
 
 ## Nicht enthalten
 
-- **Anlagenbuchhaltung** — nächster Ausbauschritt, von den GoBD (Rz. 159)
-  ausdrücklich erwartet
 - **Lohnabrechnungsdaten** — dafür existiert die Digitale LohnSchnittstelle (DLS).
   Alle FiBu-Buchungen zu Personalkosten sind selbstverständlich Teil des Journals
 - Kein SKR03/SKR04-Mapping: exportiert werden die Kontonummern und -bezeichnungen

@@ -278,12 +278,73 @@ nach `voucher_no`. Zeilen mit Saldo 0,00 entfallen.
 Der Beschreibungsstandard erlaubt mehrere `VariablePrimaryKey`-Spalten; die drei
 Schlüsselspalten stehen deshalb am Anfang der Datei.
 
-### ForeignKeys der Stufe 2
+## Stufe 3 — Anlagenbuchhaltung
+
+Ebenfalls **nicht abwählbar**: Die GoBD (Rz. 159) nennen die Anlagenbuchhaltung
+ausdrücklich neben der Finanzbuchhaltung.
+
+### anlagegueter.csv
+
+Quelle: `Asset`, Filter `company`, `docstatus = 1`, `purchase_date <= bis` und
+(kein Abgang **oder** Abgang `>= von`) — also alle Anlagen, die im Zeitraum zum
+Bestand gehörten, inklusive der Abgänge. Abschreibungsparameter aus der ersten
+Zeile von `Asset Finance Book`, Konten aus `Asset Category Account` der Company.
+
+| Spalte | Typ | Quelle | Bemerkung |
+|---|---|---|---|
+| Anlagennummer | AlphaNumeric, PK | `name` | |
+| Bezeichnung | AlphaNumeric | `asset_name` | |
+| Anlagenklasse | AlphaNumeric | `asset_category` | |
+| Artikel | AlphaNumeric | `item_code` | |
+| Anschaffungsdatum | Date | `purchase_date` | |
+| Inbetriebnahme | Date | `available_for_use_date` | Beginn der Nutzung |
+| Anschaffungskosten | Numeric(2) | `gross_purchase_amount` (v15) bzw. `net_purchase_amount` (v16) | dasselbe Feld, in v16 umbenannt |
+| AnschaffungskostenGesamt | Numeric(2) | `total_asset_cost` | inkl. nachträglicher Anschaffungskosten |
+| Menge | Numeric(3) | `asset_quantity` | |
+| Abschreibungsmethode | AlphaNumeric | `Asset Finance Book.depreciation_method` | |
+| AnzahlAbschreibungen | Numeric(0) | `total_number_of_depreciations` | |
+| IntervallMonate | Numeric(0) | `frequency_of_depreciation` | 12 = jährlich |
+| Abschreibungsbeginn | Date | `depreciation_start_date` | |
+| Restwert | Numeric(2) | `expected_value_after_useful_life` | |
+| AbschreibungEroeffnung | Numeric(2) | `opening_accumulated_depreciation` | Übernahme aus Altsystem |
+| KumulierteAbschreibung | Numeric(2) | Eröffnung + gebuchte AfA bis Stichtag | nur Zeilen mit Buchungsbeleg |
+| BuchwertStichtag | Numeric(2) | AnschaffungskostenGesamt − KumulierteAbschreibung | |
+| Status | AlphaNumeric | `status` | |
+| Abgangsdatum | Date | `disposal_date` | |
+| Kostenstelle | AlphaNumeric | `cost_center` | |
+| Standort | AlphaNumeric | `location` | |
+| Anlagenkonto | AlphaNumeric, FK→Kontenplan | `fixed_asset_account` | |
+| AfAKonto | AlphaNumeric, FK→Kontenplan | `depreciation_expense_account` | |
+| KumAfAKonto | AlphaNumeric, FK→Kontenplan | `accumulated_depreciation_account` | |
+| Stichtag | Date | Exportende „bis" | Bezug von KumulierteAbschreibung und BuchwertStichtag |
+| ErfasstAm / ErfasstUm / ErfasstVon | | `creation`, `owner` | |
+
+### abschreibungen.csv
+
+Quelle: `Depreciation Schedule` (Kindtabelle von `Asset Depreciation Schedule`,
+`docstatus = 1`, `company`), Filter `schedule_date` in [von, bis]. Geplante, noch
+nicht gebuchte Zeilen sind enthalten und über `Gebucht` erkennbar.
+
+| Spalte | Typ | Quelle |
+|---|---|---|
+| AbschreibungsID | AlphaNumeric, PK | `name` der Zeile |
+| Anlagennummer | AlphaNumeric, FK→Anlagegueter | `Asset Depreciation Schedule.asset` |
+| Datum | Date | `schedule_date` |
+| Betrag | Numeric(2) | `depreciation_amount` |
+| KumulierterBetrag | Numeric(2) | `accumulated_depreciation_amount` |
+| Belegnummer | AlphaNumeric | `journal_entry` |
+| Gebucht | AlphaNumeric + Map 0→Nein,1→Ja | abgeleitet aus `journal_entry` |
+| Finanzbuch | AlphaNumeric | `Asset Depreciation Schedule.finance_book` |
+
+### ForeignKeys der Stufe 2 und 3
 
 `positionen.Belegnummer` → Rechnung · `positionen.Ertragskonto`/`Aufwandskonto`
 → Kontenplan · `rechnung.Debitor`/`Kreditor` → Debitoren/Kreditoren ·
 `zahlungen.KontoVon`/`KontoNach` → Kontenplan · `zahlungszuordnungen.Zahlungsnummer`
 → Zahlungen · `opos.Konto` → Kontenplan · `opos.Partei` → Debitoren bzw. Kreditoren.
+
+`anlagegueter.Anlagenkonto`/`AfAKonto`/`KumAfAKonto` → Kontenplan ·
+`abschreibungen.Anlagennummer` → Anlagegueter.
 
 Bewusst **kein** ForeignKey von `journal.Belegnummer` auf die Rechnungstabellen:
 das Journal enthält alle Belegarten, ein FK wäre für Zahlungen, Buchungssätze

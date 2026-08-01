@@ -28,13 +28,19 @@ class TestSchema(unittest.TestCase):
 				"zahlungszuordnungen.csv",
 				"opos_debitoren.csv",
 				"opos_kreditoren.csv",
+				# Anlagenbuchhaltung
+				"anlagegueter.csv",
+				"abschreibungen.csv",
 			],
 		)
 
 	def test_scope_is_not_configurable(self):
 		# The tax audit defines the scope, not the taxpayer (SPEC.md, stage 2).
 		self.assertEqual(schema.get_tables(), schema.ALL_TABLES)
-		self.assertEqual(schema.ALL_TABLES, schema.MVP_TABLES + schema.STAGE_2_TABLES)
+		self.assertEqual(
+			schema.ALL_TABLES,
+			schema.MVP_TABLES + schema.STAGE_2_TABLES + schema.STAGE_3_TABLES,
+		)
 
 	def test_journal_columns_follow_spec(self):
 		self.assertEqual(

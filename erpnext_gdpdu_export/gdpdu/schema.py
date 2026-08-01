@@ -532,6 +532,97 @@ OPEN_ITEMS_SUPPLIERS = Table(
 	),
 )
 
+# --------------------------------------------------------------- stage 3
+#
+# Anlagenbuchhaltung — named explicitly by the GoBD (Rz. 159) next to the
+# financial accounting, therefore part of every export as well.
+
+ASSETS = Table(
+	key="assets",
+	filename="anlagegueter.csv",
+	name="Anlagegueter",
+	description=(
+		"Anlagenverzeichnis zum Stichtag mit Anschaffungskosten, Abschreibungsparametern, "
+		"kumulierter Abschreibung und Buchwert."
+	),
+	user_hint="Anlagevermögen mit Anschaffungskosten, Abschreibung und Buchwert.",
+	columns=(
+		Column(name="Anlagennummer", is_key=True, description="Nummer der Anlage im System."),
+		Column(name="Bezeichnung", description="Bezeichnung der Anlage."),
+		Column(name="Anlagenklasse", description="Anlagenkategorie."),
+		Column(name="Artikel", description="Zugrunde liegende Artikelnummer."),
+		Column(name="Anschaffungsdatum", type=DATE, description="Datum der Anschaffung."),
+		Column(name="Inbetriebnahme", type=DATE, description="Beginn der Nutzung."),
+		_amount("Anschaffungskosten", "Anschaffungskosten der Anlage."),
+		_amount(
+			"AnschaffungskostenGesamt",
+			"Anschaffungskosten einschliesslich nachtraeglicher Anschaffungskosten.",
+		),
+		Column(name="Menge", type=NUMERIC, accuracy=3, description="Anzahl der Einheiten."),
+		Column(name="Abschreibungsmethode", description="Methode der planmaessigen Abschreibung."),
+		Column(
+			name="AnzahlAbschreibungen",
+			type=NUMERIC,
+			accuracy=0,
+			description="Geplante Anzahl der Abschreibungsbuchungen.",
+		),
+		Column(
+			name="IntervallMonate",
+			type=NUMERIC,
+			accuracy=0,
+			description="Abstand der Abschreibungsbuchungen in Monaten; 12 bedeutet jaehrlich.",
+		),
+		Column(name="Abschreibungsbeginn", type=DATE, description="Beginn der Abschreibung."),
+		_amount("Restwert", "Erwarteter Restwert nach Ablauf der Nutzungsdauer."),
+		_amount("AbschreibungEroeffnung", "Uebernommene kumulierte Abschreibung aus einem Altsystem."),
+		_amount(
+			"KumulierteAbschreibung",
+			"Kumulierte Abschreibung bis zum Stichtag, nur gebuchte Betraege.",
+		),
+		_amount("BuchwertStichtag", "Buchwert zum Stichtag."),
+		Column(name="Status", description="Status der Anlage im System."),
+		Column(name="Abgangsdatum", type=DATE, description="Datum des Abgangs, falls vorhanden."),
+		Column(name="Kostenstelle", description="Kostenstelle der Anlage."),
+		Column(name="Standort", description="Standort der Anlage."),
+		Column(name="Anlagenkonto", description="Bilanzkonto der Anlage, siehe Tabelle Kontenplan."),
+		Column(name="AfAKonto", description="Aufwandskonto der Abschreibung, siehe Tabelle Kontenplan."),
+		Column(
+			name="KumAfAKonto",
+			description="Konto der kumulierten Abschreibung, siehe Tabelle Kontenplan.",
+		),
+		Column(name="Stichtag", type=DATE, description="Stichtag der Werte (Ende des Exportzeitraums)."),
+		*_AUDIT_COLUMNS,
+	),
+	foreign_keys=(
+		ForeignKey(columns=("Anlagenkonto",), references="Kontenplan"),
+		ForeignKey(columns=("AfAKonto",), references="Kontenplan"),
+		ForeignKey(columns=("KumAfAKonto",), references="Kontenplan"),
+	),
+)
+
+DEPRECIATIONS = Table(
+	key="depreciations",
+	filename="abschreibungen.csv",
+	name="Abschreibungen",
+	description="Abschreibungszeilen des Exportzeitraums je Anlage, geplant und gebucht.",
+	user_hint="Abschreibungen des Zeitraums je Anlage.",
+	columns=(
+		Column(name="AbschreibungsID", is_key=True, description="Eindeutige Kennung der Zeile."),
+		Column(name="Anlagennummer", description="Anlage, zu der die Abschreibung gehoert."),
+		Column(name="Datum", type=DATE, description="Datum der Abschreibung."),
+		_amount("Betrag", "Abschreibungsbetrag."),
+		_amount("KumulierterBetrag", "Kumulierte Abschreibung nach dieser Zeile."),
+		Column(name="Belegnummer", description="Buchungsbeleg der Abschreibung, falls gebucht."),
+		Column(
+			name="Gebucht",
+			description="Kennzeichen, ob die Abschreibung bereits gebucht ist.",
+			maps=MAP_YES_NO,
+		),
+		Column(name="Finanzbuch", description="Finanzbuch der Abschreibungsreihe."),
+	),
+	foreign_keys=(ForeignKey(columns=("Anlagennummer",), references="Anlagegueter"),),
+)
+
 #: Finanzbuchhaltung: journal, chart of accounts and the master data it refers to.
 #: The journal runs first because it defines which accounts and parties are used.
 MVP_TABLES: tuple[Table, ...] = (JOURNAL, ACCOUNTS, CUSTOMERS, SUPPLIERS, TAXES)
@@ -548,7 +639,10 @@ STAGE_2_TABLES: tuple[Table, ...] = (
 	OPEN_ITEMS_SUPPLIERS,
 )
 
-ALL_TABLES: tuple[Table, ...] = MVP_TABLES + STAGE_2_TABLES
+#: Anlagenbuchhaltung (SPEC.md, stage 3).
+STAGE_3_TABLES: tuple[Table, ...] = (ASSETS, DEPRECIATIONS)
+
+ALL_TABLES: tuple[Table, ...] = MVP_TABLES + STAGE_2_TABLES + STAGE_3_TABLES
 
 
 def get_tables() -> tuple[Table, ...]:

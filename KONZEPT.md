@@ -181,12 +181,14 @@ Nicht im Scope (spätere Stufen): Lohnabrechnung/DLS, SKR-Mapping,
 Festschreibungs-/Unveränderbarkeitsprüfungen, Verfahrensdokumentations-Template,
 Z1/Z2-Zugriff, DATEV-Export.
 
-**Anlagenbuchhaltung (Stufe 3, priorisierte Ausbaustufe):** Die GoBD (Rz. 159)
-erwarten neben der Finanzbuchhaltung ausdrücklich auch die vollumfängliche
-Bereitstellung der Anlagenbuchhaltung. Für Nutzer des ERPNext-Asset-Moduls
-(Asset, Depreciation Schedule) ist ein Anlagen-Export daher prüfungsrelevant und
-wird nach Stufe 2 als nächstes umgesetzt. Bis dahin dokumentiert das README diese
-Lücke transparent.
+**Anlagenbuchhaltung (Stufe 3) — umgesetzt:** Die GoBD (Rz. 159) erwarten neben
+der Finanzbuchhaltung ausdrücklich auch die Anlagenbuchhaltung. Exportiert werden
+`anlagegueter.csv` (Anlagenverzeichnis mit Anschaffungskosten,
+Abschreibungsparametern, kumulierter Abschreibung und Buchwert zum Stichtag,
+inklusive der Konten aus der Anlagenklasse) und `abschreibungen.csv`
+(Abschreibungszeilen des Zeitraums, geplante wie gebuchte). Quelle sind `Asset`,
+`Asset Finance Book`, `Asset Depreciation Schedule` und `Asset Category Account`.
+Betriebe ohne Asset-Modul erhalten die Dateien mit reiner Kopfzeile.
 
 ## 7. Offene Punkte (vor v1.0 zu klären)
 

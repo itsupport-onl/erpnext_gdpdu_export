@@ -159,7 +159,7 @@ class Protocol:
 		for table in self.tables:
 			count = f"{table.rows:,}".replace(",", ".")
 			unit = "Datensatz" if table.rows == 1 else "Datensätze"
-			lines.append(f"{table.filename:<26} {count:>10} {unit}")
+			lines.append(f"{table.filename:<36} {count:>10} {unit}")
 
 		lines += [
 			"",

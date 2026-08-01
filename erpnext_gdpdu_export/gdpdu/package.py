@@ -251,7 +251,7 @@ def _zip_folder(folder: Path) -> bytes:
 
 
 def _readme_text(protocol: Protocol) -> str:
-	files = "\n".join(f"  {table.filename:<26} {table.hint or table.name}" for table in protocol.tables)
+	files = "\n".join(f"  {table.filename:<36} {table.hint or table.name}" for table in protocol.tables)
 	return f"""GoBD-Datenträgerüberlassung (Z3-Zugriff, § 147 Abs. 6 AO)
 ========================================================
 

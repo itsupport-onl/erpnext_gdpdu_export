@@ -4,8 +4,8 @@ Diese App läuft unverändert auf ERPNext/Frappe **v15** und **v16**. Verprobt m
 
 | | Frappe | ERPNext | Python | Testlauf |
 |---|---|---|---|---|
-| v15 | 15.116.1 | 15.118.3 | 3.11 | 81 Tests grün |
-| v16 | 16.29.0 | 16.30.0 | 3.14 | 81 Tests grün |
+| v15 | 15.116.1 | 15.118.3 | 3.11 | 94 Tests grün |
+| v16 | 16.29.0 | 16.30.0 | 3.14 | 94 Tests grün |
 
 Verprobt wurde jeweils: `install-app`, `migrate`, kompletter Testlauf,
 DTD-Validierung der erzeugten `index.xml` sowie ein realer Export im Desk
@@ -60,6 +60,17 @@ v16 ergänzt im DocType „Workspace" die Felder `type` (Pflichtfeld, Default
 gesetzt; v15 ignoriert die unbekannten Schlüssel. `app: erpnext` sorgt dafür,
 dass der Arbeitsbereich in v16 dort erscheint, wo die Buchhaltung ohnehin
 arbeitet.
+
+### 5. Anlagenbuchhaltung: umbenanntes Feld
+
+Das Feld mit den Anschaffungskosten heißt in v15 `Asset.gross_purchase_amount`
+(Label „Net Purchase Amount"), in v16 `Asset.net_purchase_amount` — dasselbe
+Feld, nur umbenannt. Ebenso wird eine übernommene Altanlage in v15 über
+`is_existing_asset`, in v16 über `asset_type = "Existing Asset"` gekennzeichnet.
+
+→ [`gdpdu/extractors/assets.py`](erpnext_gdpdu_export/gdpdu/extractors/assets.py)
+ermittelt das vorhandene Feld zur Laufzeit über `frappe.get_meta`; die
+Testdaten nutzen dieselbe Funktion.
 
 ## Was gleich geblieben ist
 

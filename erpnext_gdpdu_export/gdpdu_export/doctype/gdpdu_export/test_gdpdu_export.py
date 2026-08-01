@@ -20,6 +20,7 @@ from frappe.utils import nowdate
 
 from erpnext_gdpdu_export.gdpdu.dtd import get_dtd, validate_index_xml
 from erpnext_gdpdu_export.gdpdu.extractors import ExtractionContext, journal
+from erpnext_gdpdu_export.gdpdu.extractors import assets as asset_extractor
 from erpnext_gdpdu_export.gdpdu.index_xml import INDEX_FILE_NAME
 from erpnext_gdpdu_export.gdpdu.package import PROTOCOL_FILE_NAME, README_FILE_NAME, build_package
 from erpnext_gdpdu_export.gdpdu.protocol import Protocol
@@ -41,11 +42,22 @@ ITEM = "_Test GDPdU Leistung"
 #: Part payment on the test invoice, so the open item carries a real remainder.
 PAYMENT_AMOUNT = 500
 
+ASSET_ITEM = "_Test GDPdU Maschine"
+ASSET_CATEGORY = "_Test GDPdU Anlagenklasse"
+ASSET_LOCATION = "_Test GDPdU Standort"
+
+#: Anschaffungskosten, davon aus dem Altsystem uebernommene Abschreibung.
+ASSET_COST = 10000
+ASSET_OPENING_DEPRECIATION = 2000
+
 ACCOUNTS = (
+	("0490", "Betriebsausstattung GDPdU", "Asset", "Fixed Asset"),
+	("0499", "Kumulierte Abschreibung GDPdU", "Asset", "Accumulated Depreciation"),
 	("1200", "Bank GDPdU", "Asset", "Bank"),
 	("1400", "Forderungen GDPdU", "Asset", "Receivable"),
 	("1600", "Verbindlichkeiten GDPdU", "Liability", "Payable"),
 	("1776", "Umsatzsteuer GDPdU", "Liability", "Tax"),
+	("4830", "Abschreibungen GDPdU", "Expense", "Depreciation"),
 	("4980", "Bürobedarf GDPdU", "Expense", ""),
 	("8400", "Erlöse GDPdU", "Income", ""),
 )
@@ -273,6 +285,48 @@ class TestGDPdUExport(AppTestCase):
 
 		self.assertTrue(open_parties <= customers)
 
+	# ------------------------------------------------- Anlagenbuchhaltung
+
+	def test_asset_register_carries_values_and_accounts(self):
+		files = self.read_package(self.build())
+		rows = self.read_csv(files, "anlagegueter.csv")
+
+		self.assertEqual(len(rows), 1)
+		asset = rows[0]
+		self.assertEqual(asset["Bezeichnung"], "_Test GDPdU Maschine")
+		self.assertEqual(asset["Anlagenklasse"], ASSET_CATEGORY)
+		self.assertEqual(asset["Anschaffungskosten"], "10000,00")
+		self.assertEqual(asset["AbschreibungEroeffnung"], "2000,00")
+		# Ohne gebuchte Abschreibung bleibt es bei der Uebernahme aus dem Altsystem.
+		self.assertEqual(asset["KumulierteAbschreibung"], "2000,00")
+		self.assertEqual(asset["BuchwertStichtag"], "8000,00")
+		self.assertEqual(asset["Abschreibungsmethode"], "Straight Line")
+		self.assertEqual(asset["IntervallMonate"], "12")
+		self.assertEqual(asset["AnzahlAbschreibungen"], "5")
+		self.assertEqual(asset["Anlagenkonto"], "0490")
+		self.assertEqual(asset["AfAKonto"], "4830")
+		self.assertEqual(asset["KumAfAKonto"], "0499")
+		self.assertEqual(asset["Standort"], ASSET_LOCATION)
+		self.assertEqual(asset["Stichtag"], self.to_date.replace("-", ""))
+
+	def test_depreciation_lines_of_the_period_are_exported(self):
+		files = self.read_package(self.build())
+		asset = self.read_csv(files, "anlagegueter.csv")[0]["Anlagennummer"]
+		rows = self.read_csv(files, "abschreibungen.csv")
+
+		self.assertTrue(rows)
+		for row in rows:
+			self.assertEqual(row["Anlagennummer"], asset)
+			self.assertIn(row["Gebucht"], ("0", "1"))
+			self.assertEqual(len(row["Datum"]), 8)
+			self.assertTrue(row["Datum"].startswith(str(self.year)))
+
+	def test_purchase_amount_field_exists_in_this_version(self):
+		# v15 calls it gross_purchase_amount, v16 net_purchase_amount.
+		field = asset_extractor.purchase_amount_field()
+		self.assertIn(field, asset_extractor.PURCHASE_AMOUNT_FIELDS)
+		self.assertTrue(frappe.get_meta("Asset").has_field(field))
+
 	def test_period_outside_of_the_bookings_yields_an_empty_journal(self):
 		result = build_package(COMPANY, f"{self.year - 5}-01-01", f"{self.year - 5}-12-31")
 
@@ -364,6 +418,7 @@ def create_fixtures() -> str:
 	invoice = create_sales_invoice(accounts)
 	create_purchase_invoice(accounts)
 	create_payment(accounts, invoice)
+	create_asset(accounts)
 	return fiscal_year
 
 
@@ -499,6 +554,117 @@ def create_purchase_invoice(accounts: dict[str, str]) -> str:
 	invoice.insert()
 	invoice.submit()
 	return invoice.name
+
+
+def create_asset(accounts: dict[str, str]) -> str:
+	"""Create a depreciating asset; ERPNext builds its depreciation schedule on submit."""
+	existing = frappe.db.get_value("Asset", {"company": COMPANY, "docstatus": 1}, "name")
+	if existing:
+		return existing
+
+	_ensure_asset_category(accounts)
+	_ensure_asset_item()
+	_ensure_location()
+
+	# One period was taken over from the previous system, so ERPNext requires the
+	# depreciation to start at least one period after the available-for-use date.
+	year = int(nowdate()[:4])
+	in_use_since = f"{year - 2}-12-31"
+	next_depreciation = f"{year}-12-31"
+
+	values = {
+		"doctype": "Asset",
+		"company": COMPANY,
+		"asset_name": "_Test GDPdU Maschine",
+		"item_code": ASSET_ITEM,
+		"asset_category": ASSET_CATEGORY,
+		"location": ASSET_LOCATION,
+		"cost_center": _cost_center(),
+		"purchase_date": in_use_since,
+		"available_for_use_date": in_use_since,
+		"asset_quantity": 1,
+		"calculate_depreciation": 1,
+		"opening_accumulated_depreciation": ASSET_OPENING_DEPRECIATION,
+		"opening_number_of_booked_depreciations": 1,
+		# The purchase amount field was renamed between v15 and v16.
+		asset_extractor.purchase_amount_field(): ASSET_COST,
+		"finance_books": [
+			{
+				"depreciation_method": "Straight Line",
+				"total_number_of_depreciations": 5,
+				"frequency_of_depreciation": 12,
+				"depreciation_start_date": next_depreciation,
+				"expected_value_after_useful_life": 0,
+			}
+		],
+	}
+	values.update(_existing_asset_flag())
+
+	asset = frappe.get_doc(values)
+	asset.insert()
+	asset.submit()
+	return asset.name
+
+
+def _existing_asset_flag() -> dict:
+	"""v15 marks a takeover with is_existing_asset, v16 with asset_type."""
+	meta = frappe.get_meta("Asset")
+	if meta.has_field("is_existing_asset"):
+		return {"is_existing_asset": 1}
+	if meta.has_field("asset_type"):
+		return {"asset_type": "Existing Asset"}
+	return {}
+
+
+def _ensure_asset_category(accounts: dict[str, str]) -> None:
+	if frappe.db.exists("Asset Category", ASSET_CATEGORY):
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Asset Category",
+			"asset_category_name": ASSET_CATEGORY,
+			"finance_books": [
+				{
+					"depreciation_method": "Straight Line",
+					"total_number_of_depreciations": 5,
+					"frequency_of_depreciation": 12,
+				}
+			],
+			"accounts": [
+				{
+					"company_name": COMPANY,
+					"fixed_asset_account": accounts["0490"],
+					"accumulated_depreciation_account": accounts["0499"],
+					"depreciation_expense_account": accounts["4830"],
+				}
+			],
+		}
+	).insert()
+
+
+def _ensure_asset_item() -> None:
+	if frappe.db.exists("Item", ASSET_ITEM):
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Item",
+			"item_code": ASSET_ITEM,
+			"item_name": ASSET_ITEM,
+			"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+			or frappe.db.get_value("Item Group", {}, "name"),
+			"stock_uom": _uom(),
+			"is_stock_item": 0,
+			"is_fixed_asset": 1,
+			"asset_category": ASSET_CATEGORY,
+		}
+	).insert()
+
+
+def _ensure_location() -> None:
+	if not frappe.db.exists("Location", ASSET_LOCATION):
+		frappe.get_doc({"doctype": "Location", "location_name": ASSET_LOCATION}).insert()
 
 
 def create_payment(accounts: dict[str, str], invoice: str) -> str:
