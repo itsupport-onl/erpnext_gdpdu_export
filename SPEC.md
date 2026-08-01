@@ -16,7 +16,7 @@ Quelle: `GL Entry`, Filter `company`, `posting_date` in [von, bis],
 |---|---|---|---|
 | JournalID | AlphaNumeric, PK | `name` | eindeutig |
 | Buchungsdatum | Date YYYYMMDD | `posting_date` | |
-| Belegdatum | Date YYYYMMDD | Belegdatum des Vouchers, sonst `posting_date` | Stufe 2 verfeinert |
+| Belegdatum | Date YYYYMMDD | `posting_date` | GL Entry führt kein eigenes Belegdatum; Verfeinerung mit Stufe 2 |
 | Belegart | AlphaNumeric | `voucher_type` | Sales Invoice, Journal Entry, … |
 | Belegnummer | AlphaNumeric | `voucher_no` | Verknüpfung zur Belegebene |
 | Konto | AlphaNumeric, FK→kontenplan | `account` → `Account.account_number` (Fallback: Kontoname) | |
@@ -25,8 +25,8 @@ Quelle: `GL Entry`, Filter `company`, `posting_date` in [von, bis],
 | Haben | Numeric(2) | `credit` | |
 | Waehrung | AlphaNumeric | Company default currency | konstant je Export |
 | GegenparteiTyp | AlphaNumeric | `party_type` | Customer/Supplier/Employee/leer |
-| Gegenpartei | AlphaNumeric, FK→debitoren/kreditoren | `party` | |
-| Gegenkonto | AlphaNumeric | `against` | ERPNext-Semantik: Sammelangabe, im README erläutern |
+| Gegenpartei | AlphaNumeric | `party` | siehe Hinweis unten |
+| Gegenkonto | AlphaNumeric | `against` | Sammelangabe; Kontonamen werden auf Kontoschlüssel übersetzt, mehrere durch Komma getrennt. ERPNext trägt bei Buchungen auf Personenkonten dort die Gegenpartei statt eines Kontos ein — Werte werden unverändert übernommen und in der Spaltenbeschreibung erläutert |
 | Buchungstext | AlphaNumeric | `remarks` | bereinigt: CR/LF → Leerzeichen |
 | Kostenstelle | AlphaNumeric | `cost_center` | |
 | ErfasstAm | Date YYYYMMDD | `creation` | |
@@ -34,6 +34,20 @@ Quelle: `GL Entry`, Filter `company`, `posting_date` in [von, bis],
 | ErfasstVon | AlphaNumeric | `owner` | GoBD: Nachvollziehbarkeit |
 
 Invariante: Σ Soll = Σ Haben über den gesamten Export (Test + Prüfprotokoll).
+
+**ForeignKeys des Journals.** Deklariert wird nur `Konto → Kontenplan`. Für
+`Gegenpartei` ist *kein* ForeignKey deklariert: die Spalte zeigt je nach
+`GegenparteiTyp` auf `debitoren` oder `kreditoren` (und bei `Employee` auf keine
+der beiden Tabellen). Ein FK auf genau eine Tabelle wäre für die jeweils andere
+Hälfte der Zeilen referenziell unauflösbar. Die Zuordnung steht stattdessen in
+der Spaltenbeschreibung der index.xml.
+
+**Eindeutigkeit des Kontoschlüssels.** `Konto` ist Primärschlüssel des
+Kontenplans. Führen zwei Konten auf denselben Schlüssel (gleiche Kontonummer
+oder — beim Fallback — gleiche Bezeichnung), verwendet der Export für das
+zweite Konto den vollständigen ERPNext-Kontonamen und protokolliert eine
+Warnung. Journal und Kontenplan benutzen dieselbe Zuordnung, bleiben also
+konsistent.
 
 ## kontenplan.csv — Sachkonten
 
@@ -76,7 +90,7 @@ Quelle: Steuerkonten (`Account.account_type = 'Tax'`) angereichert um Sätze aus
 | Steuerkonto | AlphaNumeric, PK, FK→kontenplan | Account |
 | Bezeichnung | AlphaNumeric | `account_name` |
 | Satz | Numeric(2) | Template-Rate, sonst `Account.tax_rate` |
-| Richtung | AlphaNumeric | Sales/Purchase/beides |
+| Richtung | AlphaNumeric | `Sales`, `Purchase` oder `Sales+Purchase` (Map erklärt die Werte) |
 
 ## index.xml — Rahmen
 
@@ -94,6 +108,41 @@ DataSet
 
 DOCTYPE: `<!DOCTYPE DataSet SYSTEM "gdpdu-01-08-2002.dtd">` — Dateiname der DTD
 bleibt aus Kompatibilitätsgründen der historische, auch für Standard v1.6.
+
+Elementreihenfolge (bindend, aus der DTD):
+
+```
+Table          (URL, Name?, Description?, Validity?, UTF8?,
+                (DecimalSymbol, DigitGroupingSymbol)?, SkipNumBytes?, Range?,
+                Epoch?, (VariableLength | FixedLength))
+VariableLength (ColumnDelimiter?, RecordDelimiter?, TextEncapsulator?,
+                ((VariablePrimaryKey+, VariableColumn*) | (VariableColumn+)),
+                ForeignKey*)
+VariableColumn (Name, Description?, (Numeric | (AlphaNumeric, MaxLength?) | Date), Map*)
+DataSupplier   (Name, Location, Comment)   — alle drei Pflicht
+ForeignKey     (Name+, References)         — References = <Name> der Zieltabelle
+```
+
+Daraus folgt: **Schlüsselspalten müssen die ersten Spalten der CSV sein**, weil
+`VariablePrimaryKey` positionsbezogen vor `VariableColumn` steht. Das Schema
+erzwingt das (`Table.__post_init__`).
+
+`RecordDelimiter` wird als `&#13;&#10;` geschrieben — ein literales CR würde von
+jedem XML-Parser zu LF normalisiert.
+
+Beschreibungstexte in der index.xml sind bewusst ASCII (keine Umlaute), damit
+ältere IDEA-Versionen nicht darüber stolpern; die Nutzdaten in den CSVs sind
+UTF-8 mit Umlauten.
+
+## Paketinhalt
+
+| Datei | Zweck | in index.xml deklariert |
+|---|---|---|
+| `index.xml` | Beschreibung aller Tabellen | — |
+| `gdpdu-01-08-2002.dtd` | DTD (Fremdartefakt, siehe KONZEPT.md §7.1) | — |
+| `*.csv` | Nutzdaten | ja |
+| `pruefprotokoll.txt` | Zeilenzahlen, Summen, Warnungen | nein |
+| `LIESMICH.txt` | Klartext-Erläuterung für Anwender und Prüfer | nein |
 
 ## Stufe 2 (Belegebene) — Skizze
 

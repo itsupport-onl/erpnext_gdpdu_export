@@ -17,3 +17,8 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.format]
+# Tabs, like the rest of the Frappe ecosystem.
+indent-style = "tab"
+docstring-code-format = true

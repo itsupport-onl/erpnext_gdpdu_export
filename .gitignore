@@ -6,3 +6,6 @@ node_modules/
 .DS_Store
 *.swp
 erpnext_gdpdu_export/public/dist/
+
+# Fremdartefakt der Audicon GmbH, siehe KONZEPT.md 7.1 — nie einchecken
+erpnext_gdpdu_export/resources/*.dtd
