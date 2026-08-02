@@ -243,7 +243,7 @@ Berlin für ERPNext, Netzwerke und IT-Security:
 ## Lizenz
 
 [AGPL-3.0](license.txt) — © Coozinha UG (haftungsbeschränkt), Berlin, handelnd als
-[itsupport.online](https://itsupport.online/), und Contributors.
+[itsupport.online](https://itsupport.online/).
 
 Impressum: <https://itsupport.online/impressum/>
 
