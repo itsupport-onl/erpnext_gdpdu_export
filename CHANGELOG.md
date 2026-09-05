@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-04
+
 ### Hinzugefügt
 - **Phase 1 — Formatkern:** deklarative Tabellendefinitionen (`gdpdu/schema.py`)
   als einzige Wahrheitsquelle für CSV-Writer und index.xml-Generator;

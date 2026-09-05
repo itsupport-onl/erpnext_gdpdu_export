@@ -15,7 +15,7 @@ ERPNext-, Netzwerk- und IT-Security-Spezialisten aus Berlin. Dauerhaft kostenlos
 [kommerziellen Support](#kommerzieller-support) gibt es, wenn jemand anderes das
 übernehmen soll.
 
-> **Status: Vorabversion (0.0.1), noch nicht mit IDEA verprobt.** Format und
+> **Status: Vorabversion (0.1.0), noch nicht mit IDEA verprobt.** Format und
 > Beschreibungsdatei sind gegen die Original-DTD des Standards validiert, 94 Tests
 > laufen auf ERPNext v15 und v16. Was aussteht, ist die Verprobung durch einen Prüfer
 > oder Steuerberater. Lesen Sie [Gewährleistung und Haftung](#gewährleistung-und-haftung),
