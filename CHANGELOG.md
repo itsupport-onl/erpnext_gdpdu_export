@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-26
+
+### Hinzugefügt
+- Schild-Logo (`app_logo_url`) und mitgelieferte Desktop-Kachel „GoBD-Export“ für die
+  Desk-Startseite von Frappe v16; die Kachel zeigt das Logo statt des Anfangsbuchstabens.
+
 ## [0.1.0] - 2026-09-05
 
 ### Hinzugefügt

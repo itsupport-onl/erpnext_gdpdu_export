@@ -7,4 +7,6 @@ app_description = (
 )
 app_email = "tickets@itsupport.onl"
 app_license = "agpl-3.0"
+# Shown on the desk home, in the app switcher and wherever Frappe needs a mark for the app
+app_logo_url = "/assets/erpnext_gdpdu_export/images/logo.svg"
 required_apps = ["erpnext"]
