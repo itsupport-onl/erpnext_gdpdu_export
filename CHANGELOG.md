@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-26
+
+### Hinzugefügt
+- Breadcrumb „Alle Apps“ (Link auf `/desk`) vor dem Titel der GDPdU-Export-Einstellungen; Frappe 16
+  zeigt für Single-DocTypes sonst nur den Titel ohne Weg zurück zur Desk-Startseite.
+
 ## [0.2.0] - 2026-11-26
 
 ### Hinzugefügt
