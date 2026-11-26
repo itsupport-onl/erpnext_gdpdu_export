@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-26
+
+### Behoben
+- Leere `patches.txt` ergänzt. bench erkennt einen App-Ordner nur mit `hooks.py`, `modules.txt`
+  und `patches.txt` als Frappe-App (`bench/utils/__init__.py`, `paths_in_app`); ohne die Datei
+  fehlte die App beim Image-Bau in `sites/apps.txt`, `bench build` legte keinen Verweis
+  `assets/erpnext_gdpdu_export` an, und `/assets/erpnext_gdpdu_export/images/logo.svg` antwortete
+  mit 404 (Desk-Kachel ohne Logo). Zur Laufzeit lief die App trotzdem, weil der Container die
+  `apps.txt` aus dem Ordnerinhalt neu schreibt.
+- `.gitignore`: veralteter Eintrag für `public/images/logo.svg` entfernt; die Datei ist das
+  eingecheckte Schild-Logo seit 0.2.0, kein Fremdartefakt mehr.
+
 ## [0.2.1] - 2026-11-26
 
 ### Hinzugefügt
