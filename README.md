@@ -99,6 +99,7 @@ Was sich je Unternehmen unterscheidet, steht im Datensatz **GDPdU Company Settin
 | Beraternummer, Mandantennummer | ebenso; für die Übergabe an den Steuerberater |
 | Standardzeitraum | Vorbelegung neuer Exporte dieses Unternehmens |
 | Fertige Exporte aufbewahren | Wie viele fertige Exporte „Alte Exporte löschen“ behält |
+| Steuerfreie Steuerkonten (0 %) | Steuerkonten, deren Satz tatsächlich 0 % ist (siehe [Steuersätze](#steuersätze-in-steuerkennzeichencsv)) |
 
 Die Installation und das Update auf 0.3.0 legen den Datensatz für jedes vorhandene
 Unternehmen aus dessen Stammdaten an (Name, Steuernummer, Ort der Firmenadresse); ein
@@ -148,6 +149,24 @@ bleibt die betreffende Datei einfach leer.
 
 Welche Spalte woher kommt, steht vollständig in [SPEC.md](SPEC.md).
 
+### Steuersätze in `steuerkennzeichen.csv`
+
+ERPNext kann „kein Steuersatz“ nicht von „0 %“ unterscheiden: Das Feld Steuersatz am
+Konto ist nie leer, sondern steht ohne Eingabe auf 0, und die mitgelieferten
+SKR03-Steuervorlagen enthalten Zeilen mit 0 % auch für Konten mit 7 % oder 19 %. Der
+Export folgt deshalb dieser Regel:
+
+1. Der Satz eines Steuerkontos ist der erste Satz **über 0 %** aus den
+   Verkaufs-Steuervorlagen, den Einkaufs-Steuervorlagen und zuletzt dem Konto selbst.
+   Ein im Konto eingetragener Satz von 7 % schlägt also eine Vorlagenzeile mit 0 %.
+2. Ein Steuerkonto, das tatsächlich steuerfrei ist (0 %), tragen Sie in den **GDPdU
+   Company Settings** des Unternehmens unter **Steuerfreie Steuerkonten (0 %)** ein. Es
+   erscheint mit Satz 0,00 und ohne Hinweis. Hat ein so eingetragenes Konto doch einen
+   Satz über 0 % im Konto oder in einer Vorlage, gilt dieser Satz.
+3. Jedes andere Steuerkonto ohne Satz über 0 % wird ohne Satz exportiert, und das
+   Prüfprotokoll meldet „Kein Steuersatz am Steuerkonto“. Tragen Sie dann den Satz im
+   Konto oder in einer Steuervorlage nach, oder kennzeichnen Sie das Konto wie unter 2.
+
 ## Das Prüfprotokoll verstehen
 
 Nach jedem Lauf steht im Dokument und im Paket ein Protokoll in Klartext: enthaltene
@@ -159,7 +178,7 @@ und Hinweise mit konkreter Handlungsanweisung.
 | Keine Kontonummer hinterlegt | Der Export nutzt ersatzweise die Kontobezeichnung. Nummern nachtragen, damit der Prüfer die gewohnte Nummer sieht |
 | Soll und Haben weichen ab | Hinweis auf unvollständige Buchungen im Zeitraum. Vor der Übergabe mit der Buchhaltung klären |
 | Keine Anschrift beim Geschäftspartner | Adresse im Stammsatz ergänzen |
-| Kein Steuersatz am Steuerkonto | Satz im Konto oder in der Steuervorlage hinterlegen |
+| Kein Steuersatz am Steuerkonto | Satz über 0 % im Konto oder in der Steuervorlage hinterlegen; echte 0-%-Konten als steuerfrei kennzeichnen ([Steuersätze](#steuersätze-in-steuerkennzeichencsv)) |
 | `gdpdu-01-08-2002.dtd` fehlt | DTD wie oben beschrieben einmalig hinterlegen |
 | Systemzeitzone außerhalb Europas | Erfassungszeiten werden in dieser Zeitzone exportiert; für eine deutsche Prüfung ist `Europe/Berlin` zu erwarten |
 | Keine Buchungen gefunden | Unternehmen und Zeitraum prüfen |

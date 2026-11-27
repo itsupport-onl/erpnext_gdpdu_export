@@ -7,6 +7,8 @@
   Settings* sofort: `doc_events`-Hook auf *Company* `after_insert`, der Datensatz nennt das
   Unternehmen ausdrücklich. Scheitert das Anlegen, entsteht ein Error-Log-Eintrag; das
   Unternehmen selbst wird trotzdem angelegt (ERP-087).
+- Feld **Steuerfreie Steuerkonten (0 %)** in den GDPdU Company Settings (Kindtabelle
+  *GDPdU Tax Exempt Account*): kennzeichnet Steuerkonten, deren Satz tatsächlich 0 % ist.
 
 ### Fixed
 - Ein GDPdU Export und ein Datensatz GDPdU Company Settings verlangen das Unternehmen
@@ -20,6 +22,13 @@
   und `is_busy` true statt des Zustands vor dem Einreihen (ERP-041).
 - `fiscal_years_for_company` und `get_export_scope` verlangen Leserecht auf *GDPdU Export*,
   wie alle anderen Funktionen der Schnittstelle (ERP-035).
+- `steuerkennzeichen.csv`: Ein Satz von 0 zählt nicht mehr als Satz, weil ERPNext „kein
+  Satz“ nicht von 0 % unterscheidet (`Account.tax_rate` ist nie leer). Der Satz ist der
+  erste Satz über 0 % aus Verkaufsvorlage, Einkaufsvorlage und Konto; ein Kontosatz von 7 %
+  wird nicht mehr von einer 0-%-Vorlagenzeile der SKR03-Standardvorlagen überdeckt. Ein
+  Steuerkonto ohne Satz über 0 % bleibt leer und meldet `missing_tax_rate`, außer es ist als
+  steuerfrei gekennzeichnet (dann 0,00). Konvention in README, SPEC.md und
+  `gdpdu/extractors/taxes.py` (ERP-104).
 - Frappe 16: `delete_old_exports` und `company_overview` nutzen keine SQL-Funktionen mehr in
   `order_by`/`fields` (dort seit Frappe 16 verboten); Sortierung und Zählung laufen in Python.
 

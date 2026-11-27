@@ -25,6 +25,9 @@ from erpnext_gdpdu_export.gdpdu.index_xml import INDEX_FILE_NAME
 from erpnext_gdpdu_export.gdpdu.package import PROTOCOL_FILE_NAME, README_FILE_NAME, build_package
 from erpnext_gdpdu_export.gdpdu.protocol import Protocol
 from erpnext_gdpdu_export.gdpdu.schema import get_tables
+from erpnext_gdpdu_export.gdpdu_export.doctype.gdpdu_company_settings.gdpdu_company_settings import (
+	ensure_company_settings,
+)
 from erpnext_gdpdu_export.tests.base import LEGACY_TEST_RUNNER, AppTestCase
 
 #: Frappe v16 reads this name; v15 knows the same switch as ``test_ignore``.
@@ -190,6 +193,80 @@ class TestGDPdUExport(AppTestCase):
 
 		self.assertIn("1776", rows)
 		self.assertEqual(rows["1776"]["Satz"], "19,00")
+
+	def test_tax_rate_convention(self):
+		"""ERP-104: 0 is never a rate; explicit rates win; exempt accounts are declared."""
+		baseline = sum(
+			warning.count for warning in self.build().protocol.warnings if warning.code == "missing_tax_rate"
+		)
+		reduced = create_account(("1771", "Umsatzsteuer 7 % GDPdU", "Liability", "Tax"))
+		frappe.db.set_value("Account", reduced, "tax_rate", 7)
+		missing = create_account(("1778", "Umsatzsteuer ohne Satz GDPdU", "Liability", "Tax"))
+		frappe.db.set_value("Account", missing, "tax_rate", 0)
+		exempt = create_account(("1779", "Steuerfrei GDPdU", "Liability", "Tax"))
+		frappe.db.set_value("Account", exempt, "tax_rate", 0)
+
+		# Like the SKR03 standard templates: a row with 0 % for an account with 7 %.
+		template = frappe.get_doc(
+			{
+				"doctype": "Sales Taxes and Charges Template",
+				"title": "_Test GDPdU Null",
+				"company": COMPANY,
+				"taxes": [
+					{
+						"charge_type": "On Net Total",
+						"account_head": account,
+						"description": "0 %",
+						"rate": 0,
+					}
+					for account in (reduced, missing)
+				],
+			}
+		).insert()
+
+		settings = frappe.get_doc("GDPdU Company Settings", ensure_company_settings(COMPANY))
+		settings.set("tax_exempt_accounts", [{"account": exempt}])
+		settings.save()
+
+		def cleanup():
+			settings.reload()
+			settings.set("tax_exempt_accounts", [])
+			settings.save()
+			frappe.delete_doc("Sales Taxes and Charges Template", template.name, force=True)
+			for account in (reduced, missing, exempt):
+				frappe.delete_doc("Account", account, force=True)
+
+		self.addCleanup(cleanup)
+
+		result = self.build()
+		rows = {row["Steuerkonto"]: row for row in self.read_csv(self.read_package(result), "steuerkennzeichen.csv")}
+
+		self.assertEqual(rows["1776"]["Satz"], "19,00")
+		self.assertEqual(rows["1771"]["Satz"], "7,00")
+		self.assertEqual(rows["1771"]["Richtung"], "Sales")
+		self.assertEqual(rows["1778"]["Satz"], "")
+		self.assertEqual(rows["1779"]["Satz"], "0,00")
+
+		warnings = {warning.code: warning for warning in result.protocol.warnings}
+		self.assertIn("missing_tax_rate", warnings)
+		# The standard chart of the test company may hold further tax accounts without a
+		# rate; of the three new accounts only the one without rate and mark may add to them.
+		self.assertEqual(warnings["missing_tax_rate"].count, baseline + 1)
+
+	def test_tax_exempt_accounts_must_be_tax_accounts_of_the_company(self):
+		settings = frappe.get_doc("GDPdU Company Settings", ensure_company_settings(COMPANY))
+		revenue = frappe.db.get_value("Account", {"company": COMPANY, "account_number": "8400"}, "name")
+		settings.set("tax_exempt_accounts", [{"account": revenue}])
+		self.assertRaises(frappe.ValidationError, settings.save)
+
+	def test_resolve_rate_ignores_zero(self):
+		from erpnext_gdpdu_export.gdpdu.extractors.taxes import resolve_rate
+
+		self.assertEqual(resolve_rate(0, None, 7), 7)
+		self.assertEqual(resolve_rate(19, 0, 7), 19)
+		self.assertEqual(resolve_rate(None, 16, 0), 16)
+		self.assertIsNone(resolve_rate(0, 0, 0))
+		self.assertIsNone(resolve_rate(None, None, None))
 
 	# ------------------------------------------------------------ Belegebene
 

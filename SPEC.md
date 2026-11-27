@@ -89,8 +89,16 @@ Quelle: Steuerkonten (`Account.account_type = 'Tax'`) angereichert um Sätze aus
 |---|---|---|
 | Steuerkonto | AlphaNumeric, PK, FK→kontenplan | Account |
 | Bezeichnung | AlphaNumeric | `account_name` |
-| Satz | Numeric(2) | Template-Rate, sonst `Account.tax_rate` |
+| Satz | Numeric(2) | erster Satz > 0 aus Verkaufsvorlage, Einkaufsvorlage, `Account.tax_rate`; sonst 0 für steuerfreie Konten, sonst leer |
 | Richtung | AlphaNumeric | `Sales`, `Purchase` oder `Sales+Purchase` (Map erklärt die Werte) |
+
+Konvention für den Satz (ERP-104): ERPNext unterscheidet „kein Satz“ nicht von 0 %
+(`Account.tax_rate` ist NOT NULL mit Default 0; die SKR03-Standardvorlagen enthalten
+Zeilen mit 0 %). Deshalb zählt 0 nie als Satz. Ein Satz > 0 im Konto schlägt eine
+0-%-Vorlagenzeile. Echte 0-%-Konten stehen in den GDPdU Company Settings unter
+„Steuerfreie Steuerkonten (0 %)“ (Kindtabelle `GDPdU Tax Exempt Account`) und werden
+mit 0,00 exportiert. Jedes andere Steuerkonto ohne Satz > 0 bleibt leer und erzeugt die
+Protokollwarnung `missing_tax_rate`.
 
 ## index.xml — Rahmen
 

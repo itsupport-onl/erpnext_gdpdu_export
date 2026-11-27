@@ -52,6 +52,25 @@ class GDPdUCompanySettings(ExplicitCompanyMixin, Document):
 			value = self.get(fieldname)
 			if value:
 				self.set(fieldname, value.strip())
+		self.validate_tax_exempt_accounts()
+
+	def validate_tax_exempt_accounts(self):
+		"""Only tax accounts of this company can be declared as genuine 0 % accounts."""
+		seen = set()
+		for row in list(self.get("tax_exempt_accounts") or []):
+			if row.account in seen:
+				self.remove(row)
+				continue
+			seen.add(row.account)
+			account = frappe.db.get_value(
+				"Account", row.account, ["company", "account_type", "is_group"], as_dict=True
+			)
+			if not account or account.company != self.company:
+				frappe.throw(f"Das Konto {row.account} gehört nicht zum Unternehmen {self.company}.")
+			if account.account_type != "Tax" or account.is_group:
+				frappe.throw(
+					f"Das Konto {row.account} ist kein Steuerkonto (Kontoart „Tax“, keine Kontengruppe)."
+				)
 
 	@frappe.whitelist()
 	def status(self) -> dict:

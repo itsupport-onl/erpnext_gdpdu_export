@@ -22,7 +22,9 @@
   "section_defaults",
   "default_period_type",
   "column_break_defaults",
-  "keep_last_exports"
+  "keep_last_exports",
+  "section_taxes",
+  "tax_exempt_accounts"
  ],
  "fields": [
   {
@@ -119,11 +121,23 @@
    "label": "Fertige Exporte aufbewahren",
    "default": "0",
    "description": "Anzahl der jüngsten fertigen Exporte, die „Alte Exporte löschen“ für dieses Unternehmen behält. 0 = nichts automatisch löschen."
+  },
+  {
+   "fieldname": "section_taxes",
+   "fieldtype": "Section Break",
+   "label": "Steuerkennzeichen"
+  },
+  {
+   "fieldname": "tax_exempt_accounts",
+   "fieldtype": "Table MultiSelect",
+   "label": "Steuerfreie Steuerkonten (0 %)",
+   "options": "GDPdU Tax Exempt Account",
+   "description": "Steuerkonten, deren Satz tatsächlich 0 % ist. Sie erscheinen in steuerkennzeichen.csv mit 0,00 und ohne Hinweis. Jedes andere Steuerkonto ohne Satz über 0 % im Konto oder in einer Steuervorlage meldet das Prüfprotokoll als „Kein Steuersatz am Steuerkonto“."
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-11-27 09:00:00.000000",
+ "modified": "2026-11-27 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "GDPdU Export",
  "name": "GDPdU Company Settings",
