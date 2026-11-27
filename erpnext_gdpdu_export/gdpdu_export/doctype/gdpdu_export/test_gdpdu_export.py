@@ -373,6 +373,36 @@ class TestGDPdUExport(AppTestCase):
 		)
 		self.assertRaises(frappe.ValidationError, doc.insert)
 
+	def test_export_without_company_is_rejected_even_with_a_default_company(self):
+		# Frappe would fill the company from the defaults; an audit export must not guess.
+		frappe.db.set_default("company", COMPANY)
+		self.addCleanup(frappe.db.set_default, "company", frappe.db.get_default("company"))
+		doc = frappe.get_doc(
+			{
+				"doctype": "GDPdU Export",
+				"period_type": "Benutzerdefiniert",
+				"from_date": self.from_date,
+				"to_date": self.to_date,
+			}
+		)
+		with self.assertRaises(frappe.MandatoryError) as ctx:
+			doc.insert()
+		self.assertIn("ausdrücklich", str(ctx.exception))
+
+	def test_company_settings_without_company_are_rejected(self):
+		frappe.db.set_default("company", COMPANY)
+		self.addCleanup(frappe.db.set_default, "company", frappe.db.get_default("company"))
+		doc = frappe.get_doc({"doctype": "GDPdU Company Settings", "keep_last_exports": 3})
+		# Named after the company, so the naming step already refuses the empty value.
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert()
+
+	def test_text_in_keep_last_exports_is_not_a_server_error(self):
+		doc = frappe.get_doc({"doctype": "GDPdU Company Settings", "company": COMPANY})
+		doc.keep_last_exports = "drei"
+		doc.validate()
+		self.assertEqual(doc.keep_last_exports, 0)
+
 	def test_start_export_queues_a_background_job(self):
 		doc = frappe.get_doc(
 			{
@@ -408,9 +438,9 @@ class TestGDPdUExport(AppTestCase):
 
 def create_fixtures() -> str:
 	"""Create everything the tests need and return the fiscal year covering today."""
-	fiscal_year = ensure_fiscal_year()
 	ensure_party_types()
 	create_company()
+	fiscal_year = ensure_fiscal_year((COMPANY,))
 	accounts = {row[0]: create_account(row) for row in ACCOUNTS}
 	create_party("Customer", CUSTOMER, "DE123456789")
 	create_party("Supplier", SUPPLIER, "DE987654321")
@@ -765,15 +795,27 @@ def create_payment(accounts: dict[str, str], invoice: str) -> str:
 	return payment.name
 
 
-def ensure_fiscal_year() -> str:
-	"""Bookings need a fiscal year covering their posting date."""
-	existing = frappe.db.get_value(
+def ensure_fiscal_year(companies: tuple[str, ...] = ()) -> str:
+	"""Bookings need a fiscal year covering their posting date that applies to the companies.
+
+	ERPNext ignores a fiscal year whose company table lists other companies only; on a site
+	with several real companies the year of today may be restricted that way.
+	"""
+	names = frappe.get_all(
 		"Fiscal Year",
-		{"year_start_date": ("<=", nowdate()), "year_end_date": (">=", nowdate())},
-		"name",
+		filters={"year_start_date": ("<=", nowdate()), "year_end_date": (">=", nowdate())},
+		pluck="name",
 	)
-	if existing:
-		return existing
+	for name in names:
+		listed = frappe.get_all("Fiscal Year Company", filters={"parent": name}, pluck="company")
+		missing = [company for company in companies if listed and company not in listed]
+		if not missing:
+			return name
+		fiscal_year = frappe.get_doc("Fiscal Year", name)
+		for company in missing:
+			fiscal_year.append("companies", {"company": company})
+		fiscal_year.save(ignore_permissions=True)
+		return name
 
 	year = nowdate()[:4]
 	return (

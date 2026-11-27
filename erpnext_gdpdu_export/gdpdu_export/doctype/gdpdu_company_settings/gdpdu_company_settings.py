@@ -15,6 +15,9 @@ from dataclasses import asdict, dataclass
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cint
+
+from erpnext_gdpdu_export.gdpdu_export.explicit_company import ExplicitCompanyMixin
 
 PERIOD_FISCAL_YEAR = "Geschäftsjahr"
 
@@ -41,9 +44,10 @@ class CompanySettings:
 		return asdict(self)
 
 
-class GDPdUCompanySettings(Document):
+class GDPdUCompanySettings(ExplicitCompanyMixin, Document):
 	def validate(self):
-		self.keep_last_exports = max(int(self.keep_last_exports or 0), 0)
+		self.require_company()
+		self.keep_last_exports = max(cint(self.keep_last_exports), 0)
 		for fieldname in TEXT_FIELDS:
 			value = self.get(fieldname)
 			if value:

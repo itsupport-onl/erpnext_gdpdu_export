@@ -22,6 +22,7 @@ from erpnext_gdpdu_export.gdpdu.dtd import get_dtd, read_attachment_bytes, valid
 from erpnext_gdpdu_export.gdpdu.index_xml import DTD_FILE_NAME, INDEX_FILE_NAME
 from erpnext_gdpdu_export.gdpdu.package import PROTOCOL_FILE_NAME, README_FILE_NAME, build_package
 from erpnext_gdpdu_export.gdpdu.schema import get_tables
+from erpnext_gdpdu_export.gdpdu_export.explicit_company import ExplicitCompanyMixin
 
 STATUS_DRAFT = "Entwurf"
 STATUS_QUEUED = "In Warteschlange"
@@ -62,8 +63,9 @@ EXPORT_FIELDS = (
 )
 
 
-class GDPdUExport(Document):
+class GDPdUExport(ExplicitCompanyMixin, Document):
 	def validate(self):
+		self.require_company()
 		self.apply_fiscal_year()
 		self.validate_fiscal_year_company()
 		self.validate_period()
