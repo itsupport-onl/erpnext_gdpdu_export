@@ -178,7 +178,7 @@ def delete_old_exports(
 		fields=["name", "status", "finished_at", "modified", "package_name"],
 	)
 	# Frappe 16 refuses SQL functions in order_by; sort in Python instead.
-	finished.sort(key=lambda row: (row.finished_at or row.modified), reverse=True)
+	finished.sort(key=lambda row: row.finished_at or row.modified, reverse=True)
 
 	candidates = finished[keep:] if keep > 0 else finished
 	if older_than_days is not None:
