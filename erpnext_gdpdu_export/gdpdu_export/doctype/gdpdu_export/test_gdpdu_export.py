@@ -790,8 +790,8 @@ def ensure_fiscal_year() -> str:
 	)
 
 
-def create_company() -> None:
-	if frappe.db.exists("Company", COMPANY):
+def create_company(company: str = COMPANY, abbr: str = ABBR) -> None:
+	if frappe.db.exists("Company", company):
 		return
 
 	ensure_warehouse_types()
@@ -799,23 +799,23 @@ def create_company() -> None:
 	frappe.get_doc(
 		{
 			"doctype": "Company",
-			"company_name": COMPANY,
-			"abbr": ABBR,
+			"company_name": company,
+			"abbr": abbr,
 			"default_currency": "EUR",
 			"country": "Germany",
 		}
 	).insert()
 
 
-def create_account(row) -> str:
+def create_account(row, company: str = COMPANY) -> str:
 	number, name, root_type, account_type = row
-	existing = frappe.db.get_value("Account", {"company": COMPANY, "account_number": number}, "name")
+	existing = frappe.db.get_value("Account", {"company": company, "account_number": number}, "name")
 	if existing:
 		return existing
 
 	root = frappe.get_all(
 		"Account",
-		filters={"company": COMPANY, "root_type": root_type, "is_group": 1},
+		filters={"company": company, "root_type": root_type, "is_group": 1},
 		order_by="lft asc",
 		limit=1,
 	)[0].name
@@ -823,7 +823,7 @@ def create_account(row) -> str:
 	doc = frappe.get_doc(
 		{
 			"doctype": "Account",
-			"company": COMPANY,
+			"company": company,
 			"account_name": name,
 			"account_number": number,
 			"parent_account": root,
@@ -840,16 +840,23 @@ def create_account(row) -> str:
 
 
 def create_party(doctype: str, name: str, tax_id: str) -> None:
+	"""Create a customer or supplier whose document name equals ``name``.
+
+	A site may name customers by naming series (Selling Settings) and default to
+	a group-type customer group; neither must change what the tests see.
+	"""
 	if not frappe.db.exists(doctype, name):
-		party = frappe.get_doc(
-			{
-				"doctype": doctype,
-				f"{doctype.lower()}_name": name,
-				f"{doctype.lower()}_type": "Company",
-				"tax_id": tax_id,
-			}
-		)
+		values = {
+			"doctype": doctype,
+			f"{doctype.lower()}_name": name,
+			f"{doctype.lower()}_type": "Company",
+			"tax_id": tax_id,
+		}
+		values[f"{doctype.lower()}_group"] = _party_group(f"{doctype} Group")
+		party = frappe.get_doc(values)
 		party.insert()
+		if party.name != name:
+			frappe.rename_doc(doctype, party.name, name, force=True)
 
 	if frappe.db.exists("Address", {"address_title": name}):
 		return
@@ -871,22 +878,44 @@ def create_party(doctype: str, name: str, tax_id: str) -> None:
 	).insert()
 
 
-def create_bookings(accounts: dict[str, str]) -> None:
-	if frappe.db.exists("Journal Entry", {"company": COMPANY, "user_remark": "Testbuchung GDPdU Erlös"}):
+def _party_group(doctype: str) -> str:
+	"""A leaf customer/supplier group; ERPNext refuses group-type ones on a party."""
+	existing = frappe.db.get_value(doctype, {"is_group": 0}, "name")
+	if existing:
+		return existing
+
+	fieldname = doctype.lower().replace(" ", "_") + "_name"
+	parent_field = "parent_" + doctype.lower().replace(" ", "_")
+	group = frappe.get_doc({"doctype": doctype, fieldname: "_Test GDPdU Gruppe", "is_group": 0})
+	parent = frappe.db.get_value(doctype, {"is_group": 1}, "name")
+	if parent:
+		group.set(parent_field, parent)
+	return group.insert().name
+
+
+def create_bookings(
+	accounts: dict[str, str],
+	company: str = COMPANY,
+	customer: str = CUSTOMER,
+	supplier: str = SUPPLIER,
+	remark: str = "Testbuchung GDPdU",
+) -> None:
+	"""Two journal entries: a sale against the customer, an expense against the supplier."""
+	if frappe.db.exists("Journal Entry", {"company": company, "user_remark": f"{remark} Erlös"}):
 		return
 
 	sales = frappe.get_doc(
 		{
 			"doctype": "Journal Entry",
 			"voucher_type": "Journal Entry",
-			"company": COMPANY,
+			"company": company,
 			"posting_date": nowdate(),
-			"user_remark": "Testbuchung GDPdU Erlös",
+			"user_remark": f"{remark} Erlös",
 			"accounts": [
 				{
 					"account": accounts["1400"],
 					"party_type": "Customer",
-					"party": CUSTOMER,
+					"party": customer,
 					"debit_in_account_currency": 1190,
 				},
 				{"account": accounts["8400"], "credit_in_account_currency": 1000},
@@ -901,15 +930,15 @@ def create_bookings(accounts: dict[str, str]) -> None:
 		{
 			"doctype": "Journal Entry",
 			"voucher_type": "Journal Entry",
-			"company": COMPANY,
+			"company": company,
 			"posting_date": nowdate(),
-			"user_remark": "Testbuchung GDPdU Aufwand",
+			"user_remark": f"{remark} Aufwand",
 			"accounts": [
 				{"account": accounts["4980"], "debit_in_account_currency": 100},
 				{
 					"account": accounts["1600"],
 					"party_type": "Supplier",
-					"party": SUPPLIER,
+					"party": supplier,
 					"credit_in_account_currency": 100,
 				},
 			],

@@ -29,6 +29,12 @@ frappe.ui.form.on("GDPdU Export", {
 		watch_progress(frm);
 	},
 
+	company(frm) {
+		if (frm.is_new() && frm.doc.company) {
+			apply_company_defaults(frm);
+		}
+	},
+
 	period_type(frm) {
 		if (frm.doc.period_type === "Geschäftsjahr") {
 			apply_fiscal_year(frm);
@@ -50,6 +56,18 @@ function set_default_company(frm) {
 			frm.set_value("company", company || fallback);
 		}
 	});
+}
+
+function apply_company_defaults(frm) {
+	// The company's settings record suggests how the period is chosen; the user may change it.
+	frappe.db
+		.get_value("GDPdU Company Settings", frm.doc.company, "default_period_type")
+		.then((response) => {
+			const period_type = response.message && response.message.default_period_type;
+			if (period_type && period_type !== frm.doc.period_type) {
+				frm.set_value("period_type", period_type);
+			}
+		});
 }
 
 function set_default_period(frm) {
@@ -194,6 +212,7 @@ function render_actions(frm) {
 	if (frm.doc.status === STATUS_COMPLETED) {
 		frm.page.set_primary_action(__("Paket herunterladen"), () => download_package(frm), "download");
 		frm.add_custom_button(__("Export wiederholen"), () => start_export(frm));
+		frm.add_custom_button(__("Paket prüfen"), () => verify_package(frm));
 	} else {
 		frm.page.set_primary_action(__("Export erstellen"), () => start_export(frm), "play");
 	}
@@ -201,6 +220,22 @@ function render_actions(frm) {
 	frm.add_custom_button(__("Einstellungen"), () =>
 		frappe.set_route("Form", "GDPdU Export Settings")
 	);
+	if (frm.doc.company) {
+		frm.add_custom_button(__("Unternehmenseinstellungen"), () =>
+			frappe.set_route("Form", "GDPdU Company Settings", frm.doc.company)
+		);
+	}
+}
+
+function verify_package(frm) {
+	frm.call({ doc: frm.doc, method: "verify_package", freeze: true }).then((response) => {
+		const result = response.message || {};
+		frappe.msgprint({
+			title: __("Paketprüfung"),
+			indicator: result.ok ? "green" : "red",
+			message: frappe.utils.escape_html(result.message || ""),
+		});
+	});
 }
 
 // ------------------------------------------------------------------- actions

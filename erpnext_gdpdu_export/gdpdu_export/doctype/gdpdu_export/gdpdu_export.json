@@ -24,6 +24,7 @@
   "section_protocol",
   "protocol_display",
   "protocol_html",
+  "protocol_json",
   "section_technical",
   "started_at",
   "finished_at",
@@ -58,7 +59,7 @@
    "label": "Unternehmen",
    "options": "Company",
    "reqd": 1,
-   "description": "Die Buchhaltung dieses Unternehmens wird exportiert."
+   "description": "Die Buchhaltung dieses Unternehmens wird exportiert. Jeder Export gehört genau einem Unternehmen; das Standard-Unternehmen ist nur eine Vorbelegung."
   },
   {
    "fieldname": "period_type",
@@ -160,6 +161,15 @@
    "read_only": 1
   },
   {
+   "fieldname": "protocol_json",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Prüfprotokoll (JSON)",
+   "no_copy": 1,
+   "read_only": 1,
+   "description": "Maschinenlesbare Fassung des Prüfprotokolls für die Statusabfrage per REST/MCP."
+  },
+  {
    "collapsible": 1,
    "fieldname": "section_technical",
    "fieldtype": "Section Break",
@@ -214,7 +224,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-01 09:00:00.000000",
+ "modified": "2026-11-27 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "GDPdU Export",
  "name": "GDPdU Export",

@@ -97,9 +97,13 @@ Quelle: Steuerkonten (`Account.account_type = 'Tax'`) angereichert um Sätze aus
 ```
 DataSet
 ├─ Version        1.0 (Version der Datenlieferung, nicht des Standards)
-├─ DataSupplier   Name=Company, Location=Company-Adresse Ort,
+├─ DataSupplier   Name=Mandantenname, Location=Ort (beides aus GDPdU Company
+│                 Settings der Company; ohne Datensatz: Company-Name und Ort
+│                 der Company-Adresse, sonst Land),
 │                 Comment="GoBD-Datentraegerueberlassung <Zeitraum>, erstellt
-│                 mit erpnext_gdpdu_export <version>"
+│                 mit erpnext_gdpdu_export <version>; Steuernummer …;
+│                 Kontenrahmen …; Beraternummer …; Mandantennummer …;
+│                 <zusätzlicher Hinweis>" (nur gepflegte Angaben)
 └─ Media Name="Export"
    └─ je Tabelle: Table{URL, Name, Description, Validity(Range=Zeitraum,
       Format YYYYMMDD), UTF8, DecimalSymbol, DigitGroupingSymbol,

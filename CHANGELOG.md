@@ -2,7 +2,39 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-27
+
+### Hinzugefügt
+- **Mandantenfähigkeit:** neuer DocType *GDPdU Company Settings*, genau ein Datensatz je
+  Unternehmen (Mandantenname, Ort, Steuernummer, Kontenrahmen, Berater- und
+  Mandantennummer, zusätzlicher Hinweis, Standardzeitraum, Aufbewahrung fertiger Exporte).
+  Die Angaben stehen im `DataSupplier` der `index.xml`, im Prüfprotokoll und in der
+  LIESMICH. Ohne Datensatz greift der Export wie bisher auf die Stammdaten des
+  Unternehmens zurück. Patch `v0_3.create_company_settings` legt beim Update den Datensatz
+  für jedes vorhandene Unternehmen aus dessen Stammdaten an.
+- Ein Export, dessen Geschäftsjahr auf andere Unternehmen beschränkt ist, wird abgewiesen;
+  der Standardzeitraum neuer Exporte kommt aus den Unternehmenseinstellungen.
+- **Schnittstelle für REST v2 und den MCP-Server von ERPNext 16:** Modul
+  `erpnext_gdpdu_export.api` mit `create_export`, `start_export`, `get_export_status`,
+  `verify_export`, `list_exports`, `download_package`, `delete_old_exports`,
+  `company_overview`, `fiscal_years_for_company`, `list_companies`,
+  `get_company_settings_status`, `create_company_settings` und `get_dtd_status`.
+  Dokumentmethoden `get_status`, `list_files` und `verify_package` am Export sowie
+  `status` und `overview` an den Unternehmenseinstellungen. `start_export` liefert jetzt
+  ein Dict statt eines Strings. Jede Funktion verlangt das Unternehmen ausdrücklich.
+- Verstecktes Feld `protocol_json` am Export: das Prüfprotokoll als Daten für die
+  Statusabfrage (`Protocol.as_dict()`).
+- Knöpfe „Paket prüfen“ und „Unternehmenseinstellungen“ im Export-Formular, Link
+  „Unternehmenseinstellungen“ im Arbeitsbereich.
+- README-Abschnitte „Mehrere Unternehmen auf einer Instanz“ und „Nutzung durch
+  KI-Assistenten (MCP)“.
+- Tests: zwei Unternehmen mit eigenen Buchungen und Parteien, deren Exporte nichts
+  voneinander enthalten; Benennung in `index.xml`, Prüfprotokoll und LIESMICH;
+  Patch-Migration; Geschäftsjahr-Beschränkung; die gesamte Schnittstelle.
+
 ### Geändert
+- Die Fixtures der Integrationstests sind unabhängig von der Kundennamensvergabe
+  (Nummernkreis) und der Standard-Kundengruppe der Site.
 - `.gitignore`: veralteter Eintrag für `public/images/logo.svg` entfernt; die Datei ist das
   eingecheckte Schild-Logo seit 0.2.0, kein Fremdartefakt mehr.
 

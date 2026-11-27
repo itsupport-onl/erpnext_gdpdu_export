@@ -17,7 +17,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Einrichtung",
-   "link_count": 1,
+   "link_count": 2,
    "onboard": 0,
    "type": "Card Break"
   },
@@ -31,9 +31,20 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Unternehmenseinstellungen",
+   "link_count": 0,
+   "link_to": "GDPdU Company Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-08-02 13:00:00.000000",
+ "modified": "2026-11-27 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "GDPdU Export",
  "name": "GoBD-Export",

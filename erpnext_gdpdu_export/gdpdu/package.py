@@ -18,6 +18,7 @@ import frappe
 from frappe.utils import getdate, now_datetime
 
 from .. import __version__
+from ..gdpdu_export.doctype.gdpdu_company_settings.gdpdu_company_settings import get_company_settings
 from .csv_writer import write_csv_file
 from .dtd import get_dtd, validate_index_xml
 from .extractors import ExtractionContext, get_extractor
@@ -55,6 +56,7 @@ def build_package(
 		frappe.throw("Das Startdatum liegt nach dem Enddatum.")
 
 	protocol = _new_protocol(company, from_date, to_date)
+	supplier_comment = _supplier_comment(protocol, get_company_settings(company).supplier_comment)
 	ctx = ExtractionContext(
 		company=company,
 		from_date=str(from_date),
@@ -81,7 +83,7 @@ def build_package(
 			tables,
 			supplier_name=protocol.company,
 			supplier_location=protocol.supplier_location,
-			comment=_supplier_comment(protocol),
+			comment=supplier_comment,
 			from_date=from_date,
 			to_date=to_date,
 		)
@@ -105,9 +107,16 @@ def build_package(
 
 
 def _new_protocol(company: str, from_date, to_date) -> Protocol:
+	"""Start the protocol from the company's settings record (or its master data)."""
 	company_doc = frappe.get_cached_doc("Company", company)
+	settings = get_company_settings(company)
 	protocol = Protocol(
-		company=company_doc.company_name or company,
+		company=settings.supplier_name or company_doc.company_name or company,
+		supplier_location=settings.supplier_location,
+		tax_id=settings.tax_id,
+		chart_of_accounts=settings.chart_of_accounts,
+		consultant_number=settings.consultant_number,
+		client_number=settings.client_number,
 		from_date=from_date,
 		to_date=to_date,
 		currency=company_doc.default_currency or "",
@@ -115,7 +124,6 @@ def _new_protocol(company: str, from_date, to_date) -> Protocol:
 		created_by=frappe.session.user,
 		created_at=now_datetime(),
 	)
-	protocol.supplier_location = _company_location(company) or company_doc.country or ""
 
 	if not protocol.currency:
 		frappe.throw(f"Für das Unternehmen {company} ist keine Währung hinterlegt.")
@@ -123,29 +131,16 @@ def _new_protocol(company: str, from_date, to_date) -> Protocol:
 	return protocol
 
 
-def _company_location(company: str) -> str:
-	"""City of the company address — ``<Location>`` of the data supplier."""
-	rows = frappe.db.sql(
-		"""
-		SELECT address.city
-		FROM `tabAddress` address
-		INNER JOIN `tabDynamic Link` link
-			ON link.parent = address.name AND link.parenttype = 'Address'
-		WHERE link.link_doctype = 'Company' AND link.link_name = %(company)s
-		ORDER BY IFNULL(address.is_primary_address, 0) DESC, address.creation ASC
-		LIMIT 1
-		""",
-		{"company": company},
-		as_dict=True,
-	)
-	return (rows[0].city if rows else "") or ""
-
-
-def _supplier_comment(protocol: Protocol) -> str:
-	return (
+def _supplier_comment(protocol: Protocol, extra: str = "") -> str:
+	"""``<Comment>`` of the data supplier: period, tool and the company's identifiers."""
+	parts = [
 		f"GoBD-Datentraegerueberlassung {format_date(protocol.from_date)}-"
 		f"{format_date(protocol.to_date)}, erstellt mit erpnext_gdpdu_export {protocol.app_version}"
-	)
+	]
+	parts += [f"{label} {value}" for label, value in protocol.company_details()]
+	if extra:
+		parts.append(" ".join(extra.split()))
+	return "; ".join(parts)
 
 
 def _package_name(company: str, from_date, to_date) -> str:
@@ -252,11 +247,12 @@ def _zip_folder(folder: Path) -> bytes:
 
 def _readme_text(protocol: Protocol) -> str:
 	files = "\n".join(f"  {table.filename:<36} {table.hint or table.name}" for table in protocol.tables)
+	details = "".join(f"{label + ':':<13}{value}\n" for label, value in protocol.company_details())
 	return f"""GoBD-Datenträgerüberlassung (Z3-Zugriff, § 147 Abs. 6 AO)
 ========================================================
 
 Unternehmen: {protocol.company}
-Zeitraum:    {protocol.period_label}
+{details}Zeitraum:    {protocol.period_label}
 Erstellt am: {protocol.created_at.strftime("%d.%m.%Y %H:%M") if protocol.created_at else ""}
 
 Dieses Paket enthält die Finanzbuchhaltung des oben genannten Zeitraums im

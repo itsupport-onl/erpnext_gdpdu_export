@@ -70,6 +70,11 @@ class Protocol:
 	company: str = ""
 	#: City of the company address — ``<Location>`` of the data supplier.
 	supplier_location: str = ""
+	#: Company-specific details from *GDPdU Company Settings*; empty when not maintained.
+	tax_id: str = ""
+	chart_of_accounts: str = ""
+	consultant_number: str = ""
+	client_number: str = ""
 	from_date: datetime.date | str = ""
 	to_date: datetime.date | str = ""
 	currency: str = ""
@@ -138,7 +143,59 @@ class Protocol:
 	def period_label(self) -> str:
 		return f"{format_date_de(self.from_date)} bis {format_date_de(self.to_date)}"
 
+	def company_details(self) -> list[tuple[str, str]]:
+		"""Label/value pairs of the company that are only shown when maintained."""
+		rows = [
+			("Steuernummer", self.tax_id),
+			("Kontenrahmen", self.chart_of_accounts),
+			("Beraternummer", self.consultant_number),
+			("Mandantennummer", self.client_number),
+		]
+		return [(label, value) for label, value in rows if value]
+
 	# ------------------------------------------------------------------ output
+
+	def as_dict(self) -> dict:
+		"""Machine-readable form of the protocol, e.g. for the status API."""
+		return {
+			"company": self.company,
+			"supplier_location": self.supplier_location,
+			"tax_id": self.tax_id,
+			"chart_of_accounts": self.chart_of_accounts,
+			"consultant_number": self.consultant_number,
+			"client_number": self.client_number,
+			"from_date": format_date(self.from_date),
+			"to_date": format_date(self.to_date),
+			"currency": self.currency,
+			"app_version": self.app_version,
+			"created_by": self.created_by,
+			"created_at": self.created_at.isoformat(sep=" ", timespec="seconds") if self.created_at else "",
+			"package_name": self.package_name,
+			"tables": [
+				{"filename": table.filename, "name": table.name, "rows": table.rows} for table in self.tables
+			],
+			"total_rows": self.total_rows,
+			"journal_rows": self.journal_rows,
+			"total_debit": str(self.total_debit.quantize(Decimal("0.01"))),
+			"total_credit": str(self.total_credit.quantize(Decimal("0.01"))),
+			"difference": str(self.difference),
+			"is_balanced": self.is_balanced,
+			"warnings": [
+				{
+					"code": warning.code,
+					"message": warning.message,
+					"hint": warning.hint,
+					"count": warning.count,
+					"samples": list(warning.samples),
+				}
+				for warning in self.warnings
+			],
+			"dtd_included": self.dtd_included,
+			"dtd_source": self.dtd_source,
+			"validation_performed": self.validation_performed,
+			"validation_valid": self.validation_valid,
+			"validation_message": self.validation_message,
+		}
 
 	def as_text(self) -> str:
 		"""Plain text protocol that travels inside the export package."""
@@ -147,6 +204,9 @@ class Protocol:
 			"=" * 48,
 			"",
 			f"Unternehmen:      {self.company}",
+		]
+		lines += [f"{label + ':':<18}{value}" for label, value in self.company_details()]
+		lines += [
 			f"Zeitraum:         {self.period_label}",
 			f"Währung:          {self.currency}",
 			f"Erstellt am:      {self._created_at_label()}",
@@ -210,6 +270,7 @@ class Protocol:
 	def _html_summary(self) -> str:
 		rows = [
 			("Unternehmen", self.company),
+			*self.company_details(),
 			("Zeitraum", self.period_label),
 			("Währung", self.currency),
 			("Erstellt am", self._created_at_label()),

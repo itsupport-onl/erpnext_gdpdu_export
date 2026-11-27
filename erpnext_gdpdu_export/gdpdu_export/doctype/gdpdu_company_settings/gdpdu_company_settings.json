@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:company",
+ "creation": "2026-11-27 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "section_supplier",
+  "supplier_name",
+  "supplier_location",
+  "column_break_supplier",
+  "tax_id",
+  "chart_of_accounts",
+  "section_consultant",
+  "consultant_number",
+  "client_number",
+  "column_break_consultant",
+  "supplier_comment",
+  "section_defaults",
+  "default_period_type",
+  "column_break_defaults",
+  "keep_last_exports"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Unternehmen",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1,
+   "description": "Je Unternehmen genau ein Datensatz. Ohne Datensatz nutzt der Export die Stammdaten des Unternehmens."
+  },
+  {
+   "fieldname": "section_supplier",
+   "fieldtype": "Section Break",
+   "label": "Angaben für den Prüfer (DataSupplier in der index.xml)"
+  },
+  {
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mandantenname",
+   "description": "Name des Datenlieferanten in der index.xml und im Prüfprotokoll. Leer: Name des Unternehmens."
+  },
+  {
+   "fieldname": "supplier_location",
+   "fieldtype": "Data",
+   "label": "Ort",
+   "description": "Ort des Datenlieferanten. Leer: Ort der Unternehmensadresse, sonst das Land."
+  },
+  {
+   "fieldname": "column_break_supplier",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Steuernummer",
+   "description": "Steuernummer des Unternehmens, wie sie in der Prüfungsanordnung steht."
+  },
+  {
+   "fieldname": "chart_of_accounts",
+   "fieldtype": "Data",
+   "label": "Kontenrahmen",
+   "description": "Bezeichnung des Kontenrahmens für Prüfprotokoll und LIESMICH, z. B. SKR03. Leer: Kontenrahmen aus dem Unternehmen."
+  },
+  {
+   "fieldname": "section_consultant",
+   "fieldtype": "Section Break",
+   "label": "Steuerberater"
+  },
+  {
+   "fieldname": "consultant_number",
+   "fieldtype": "Data",
+   "label": "Beraternummer"
+  },
+  {
+   "fieldname": "client_number",
+   "fieldtype": "Data",
+   "label": "Mandantennummer"
+  },
+  {
+   "fieldname": "column_break_consultant",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier_comment",
+   "fieldtype": "Small Text",
+   "label": "Zusätzlicher Hinweis",
+   "description": "Wird an den Kommentar des Datenlieferanten in der index.xml angehängt."
+  },
+  {
+   "fieldname": "section_defaults",
+   "fieldtype": "Section Break",
+   "label": "Vorbelegung und Aufbewahrung"
+  },
+  {
+   "fieldname": "default_period_type",
+   "fieldtype": "Select",
+   "label": "Standardzeitraum",
+   "options": "Geschäftsjahr\nBenutzerdefiniert",
+   "default": "Geschäftsjahr",
+   "description": "Vorbelegung des Feldes „Zeitraum festlegen über“ bei neuen Exporten dieses Unternehmens."
+  },
+  {
+   "fieldname": "column_break_defaults",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "keep_last_exports",
+   "fieldtype": "Int",
+   "label": "Fertige Exporte aufbewahren",
+   "default": "0",
+   "description": "Anzahl der jüngsten fertigen Exporte, die „Alte Exporte löschen“ für dieses Unternehmen behält. 0 = nichts automatisch löschen."
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-11-27 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "GDPdU Export",
+ "name": "GDPdU Company Settings",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

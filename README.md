@@ -82,6 +82,30 @@ Alternativ legt die Administration die Datei nach
 Ohne diese Datei läuft der Export weiter, das Paket ist dann aber unvollständig — das
 Prüfprotokoll weist deutlich darauf hin.
 
+### Mehrere Unternehmen auf einer Instanz
+
+Jeder Export gehört genau **einem** Unternehmen und enthält ausschließlich dessen
+Buchungen, Konten, Geschäftspartner, Belege, Steuerkonten und Anlagen. Führen Sie
+zwei Firmen in einer Instanz, etwa eine Muttergesellschaft und ihre Tochter, erhält
+jede ihr eigenes Paket, das der jeweilige Prüfer getrennt einlesen kann.
+
+Was sich je Unternehmen unterscheidet, steht im Datensatz **GDPdU Company Settings**
+(Arbeitsbereich GoBD-Export → Unternehmenseinstellungen), genau einer je Unternehmen:
+
+| Feld | Verwendung |
+|---|---|
+| Mandantenname, Ort | Datenlieferant (`DataSupplier`) in der `index.xml`, Kopf von Prüfprotokoll und LIESMICH |
+| Steuernummer, Kontenrahmen | Kommentar des Datenlieferanten in der `index.xml`, Prüfprotokoll, LIESMICH |
+| Beraternummer, Mandantennummer | ebenso; für die Übergabe an den Steuerberater |
+| Standardzeitraum | Vorbelegung neuer Exporte dieses Unternehmens |
+| Fertige Exporte aufbewahren | Wie viele fertige Exporte „Alte Exporte löschen“ behält |
+
+Die Installation und das Update auf 0.3.0 legen den Datensatz für jedes vorhandene
+Unternehmen aus dessen Stammdaten an (Name, Steuernummer, Ort der Firmenadresse); ohne
+Datensatz greift der Export auf dieselben Stammdaten zurück. Das Standard-Unternehmen
+in den **GDPdU Export Settings** ist nur eine Vorbelegung des Formulars; die
+Schnittstelle verlangt das Unternehmen immer ausdrücklich.
+
 ## Export erstellen
 
 1. **GoBD-Export → Meine Exporte → Neu**
@@ -189,6 +213,41 @@ Begründung und Details: [KONZEPT.md](KONZEPT.md) §2 und [SPEC.md](SPEC.md).
 Dieselbe Codebasis läuft auf **ERPNext/Frappe v15 und v16**; beide sind mit dem
 vollständigen Testlauf und einem echten Export im Desk verprobt. Die vier Stellen, an
 denen sich die Versionen unterscheiden, stehen in [KOMPATIBILITAET.md](KOMPATIBILITAET.md).
+
+## Nutzung durch KI-Assistenten (MCP)
+
+ERPNext 16 bringt einen MCP-Server mit, über den ein Assistent wie Claude Desktop Dokumente
+liest, ändert und freigegebene Methoden aufruft. Die App braucht dafür nichts Eigenes: alle
+Funktionen sind Dokumente oder freigegebene Methoden und laufen über dieselben Pfade wie die
+Weboberfläche (REST v2: `/api/v2/document/<DocType>`, `…/<name>/method/<methode>`,
+`/api/v2/method/erpnext_gdpdu_export.api.<funktion>`). Der Assistent arbeitet mit dem Benutzer,
+dem der MCP-Server zugeordnet ist; der braucht die Rolle **Accounts Manager** oder
+**System Manager**. Jede Methode liefert Daten zurück (kein reines `msgprint`), und jede
+verlangt das Unternehmen ausdrücklich. Nichts ist nur über die Oberfläche erreichbar.
+
+| Aufgabe | MCP-Werkzeug | Was dahinter läuft |
+|---|---|---|
+| Unternehmen aufzählen | `call_method` `erpnext_gdpdu_export.api.list_companies` | Unternehmen mit Hinweis, ob ein Einstellungsdatensatz existiert |
+| Einstellungen je Unternehmen lesen/ändern | `get_document` / `update_document` / `create_document` GDPdU Company Settings | Normale DocType-Felder; Name des Datensatzes = Unternehmen |
+| Einstellungsdatensatz anlegen | `call_method` `erpnext_gdpdu_export.api.create_company_settings` | Aus den Stammdaten des Unternehmens, falls noch keiner existiert |
+| Aufgelöste Einstellungen (mit Rückfallwerten) | `call_document_method` GDPdU Company Settings `status` | Was der Export tatsächlich verwenden würde |
+| Übersicht je Unternehmen | `call_method` `erpnext_gdpdu_export.api.company_overview` (oder `call_document_method` `overview`) | Letzte Exporte, Zeiträume, Dateien, Geschäftsjahre, Probleme (fehlende DTD, fehlgeschlagene Läufe, Hinweise des letzten Protokolls) |
+| Geschäftsjahre eines Unternehmens | `call_method` `erpnext_gdpdu_export.api.fiscal_years_for_company` | Nur die, die für das Unternehmen gelten |
+| Export anlegen | `call_method` `erpnext_gdpdu_export.api.create_export` (`company`, `fiscal_year` oder `from_date`/`to_date`, optional `start=1`) oder `create_document` GDPdU Export | Wie „Neu“ im Formular |
+| Export starten | `call_document_method` GDPdU Export `start_export` (oder `api.start_export`) | Hintergrundlauf in der Queue `long`; Ergebnis danach über `get_status` |
+| Status abfragen | `call_document_method` GDPdU Export `get_status` (oder `api.get_export_status`) | Zustand, Zeitraum, Paket, Dateien, Prüfprotokoll als Daten, Hinweise |
+| Ergebnisdateien auflisten | `call_document_method` GDPdU Export `list_files` | Angehängte Dateien mit URL und Größe |
+| Paket herunterladen | REST `GET /api/method/erpnext_gdpdu_export.api.download_package?name=…` oder die `file_url` aus `list_files` | Privater Anhang, Leserecht erforderlich |
+| Paket prüfen | `call_document_method` GDPdU Export `verify_package` (oder `api.verify_export`) | Vollständigkeit des ZIP, DTD enthalten, `index.xml` gegen die DTD |
+| Exporte eines Unternehmens | `call_method` `erpnext_gdpdu_export.api.list_exports` oder `list_documents` GDPdU Export (Filter `company`) | Standardlisten |
+| Alte Exporte löschen | `call_method` `erpnext_gdpdu_export.api.delete_old_exports` (`company`, `keep`, `older_than_days`, `dry_run=1` zur Vorschau) | Nur fertige oder fehlgeschlagene Exporte, laufende nie; ohne Argumente gilt „Fertige Exporte aufbewahren“ aus den Unternehmenseinstellungen |
+| DTD-Status | `call_method` `erpnext_gdpdu_export.api.get_dtd_status` | Ob die DTD vorliegt und woher |
+| Exportumfang | `call_method` `erpnext_gdpdu_export.gdpdu_export.doctype.gdpdu_export.gdpdu_export.get_export_scope` | Tabellen des Pakets |
+| Feldbeschreibung | `get_doctype_schema` | für Formulare und Prüfungen |
+
+Die Statusmethode des Exports heißt `get_status`, weil das Dokument ein Feld `status`
+trägt. Die Methoden sind mit Integrationstests gegen eine ERPNext-v15-Site abgedeckt
+(`gdpdu_export/test_api.py`); eine Verprobung über den MCP-Server von ERPNext 16 steht aus.
 
 ## Roadmap
 
