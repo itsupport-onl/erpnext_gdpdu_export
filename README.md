@@ -15,10 +15,11 @@ ERPNext-, Netzwerk- und IT-Security-Spezialisten aus Berlin. Dauerhaft kostenlos
 [kommerziellen Support](#kommerzieller-support) gibt es, wenn jemand anderes das
 übernehmen soll.
 
-> **Status: Vorabversion (0.1.0), noch nicht mit IDEA verprobt.** Format und
-> Beschreibungsdatei sind gegen die Original-DTD des Standards validiert, 94 Tests
-> laufen auf ERPNext v15 und v16. Was aussteht, ist die Verprobung durch einen Prüfer
-> oder Steuerberater. Lesen Sie [Gewährleistung und Haftung](#gewährleistung-und-haftung),
+> **Status: Vorabversion (0.3.1), noch nicht mit IDEA verprobt.** Die Validierung der
+> `index.xml` gegen die Original-DTD des Beschreibungsstandards (`gdpdu-01-08-2002.dtd`)
+> steht aus und erfolgt, sobald die DTD hinterlegt ist; bis dahin ist die Konformität
+> zum Standard nicht belegt. 138 Tests laufen auf ERPNext v15 und v16. Außerdem steht
+> die Verprobung durch einen Prüfer oder Steuerberater aus. Lesen Sie [Gewährleistung und Haftung](#gewährleistung-und-haftung),
 > bevor Sie sich darauf verlassen — und geben Sie das erste Paket vorab Ihrem
 > Steuerberater zur Sicht.
 
@@ -276,7 +277,7 @@ trägt. Die Methoden sind mit Integrationstests gegen eine ERPNext-v15-Site abge
 | 1 | Finanzbuchhaltung: Journal, Kontenplan, Stammdaten, Steuerkennzeichen — **fertig** |
 | 2 | Belegebene: Rechnungen mit Positionen, Zahlungen, offene Posten — **fertig** |
 | 3 | Anlagenbuchhaltung: Anlagenverzeichnis und Abschreibungen — **fertig** |
-| 4 | Verprobung mit IDEA durch Prüfer oder Steuerberater, danach Release 0.1.0 |
+| 4 | Validierung gegen die Original-DTD und Verprobung mit IDEA durch Prüfer oder Steuerberater, danach erste stabile Version |
 | 5 | Rückmeldungen aus der Praxis einarbeiten |
 
 Vorerst außerhalb des Umfangs: Lohndaten (DLS), SKR-Mapping, Belegbilder, Z1-/Z2-Zugriff,
