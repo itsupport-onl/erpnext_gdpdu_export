@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+- Frappe 16: `delete_old_exports` und `company_overview` nutzen keine SQL-Funktionen mehr in
+  `order_by`/`fields` (dort seit Frappe 16 verboten); Sortierung und Zählung laufen in Python.
+
 ## [0.3.0] - 2026-11-27
 
 ### Hinzugefügt

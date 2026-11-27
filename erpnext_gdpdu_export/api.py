@@ -176,8 +176,9 @@ def delete_old_exports(
 		EXPORT_DOCTYPE,
 		filters={"company": company, "status": ("in", FINISHED_STATES)},
 		fields=["name", "status", "finished_at", "modified", "package_name"],
-		order_by="coalesce(finished_at, modified) desc",
 	)
+	# Frappe 16 refuses SQL functions in order_by; sort in Python instead.
+	finished.sort(key=lambda row: (row.finished_at or row.modified), reverse=True)
 
 	candidates = finished[keep:] if keep > 0 else finished
 	if older_than_days is not None:
@@ -212,15 +213,9 @@ def company_overview(company: str, limit: int = 10) -> dict:
 
 	settings = get_company_settings(company)
 	exports = list_exports(company, limit=limit)
-	counts = {
-		row.status: row.count
-		for row in frappe.get_all(
-			EXPORT_DOCTYPE,
-			filters={"company": company},
-			fields=["status", "count(name) as count"],
-			group_by="status",
-		)
-	}
+	counts: dict = {}
+	for row in frappe.get_all(EXPORT_DOCTYPE, filters={"company": company}, fields=["status"]):
+		counts[row.status] = counts.get(row.status, 0) + 1
 	latest_completed = next((row for row in exports if row.status == STATUS_COMPLETED), None)
 	dtd = get_dtd_status()
 
