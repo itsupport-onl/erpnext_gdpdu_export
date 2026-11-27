@@ -19,7 +19,7 @@ import frappe
 from frappe.utils import nowdate
 
 from erpnext_gdpdu_export.gdpdu.dtd import get_dtd, validate_index_xml
-from erpnext_gdpdu_export.gdpdu.extractors import ExtractionContext, journal
+from erpnext_gdpdu_export.gdpdu.extractors import ExtractionContext, journal, taxes
 from erpnext_gdpdu_export.gdpdu.extractors import assets as asset_extractor
 from erpnext_gdpdu_export.gdpdu.index_xml import INDEX_FILE_NAME
 from erpnext_gdpdu_export.gdpdu.package import PROTOCOL_FILE_NAME, README_FILE_NAME, build_package
@@ -156,12 +156,12 @@ class TestGDPdUExport(AppTestCase):
 		self.assertEqual(len(set(chunked)), len(chunked))
 
 	def context(self, **kwargs) -> ExtractionContext:
+		kwargs.setdefault("protocol", Protocol())
 		return ExtractionContext(
 			company=COMPANY,
 			from_date=self.from_date,
 			to_date=self.to_date,
 			currency="EUR",
-			protocol=Protocol(),
 			**kwargs,
 		)
 
@@ -196,9 +196,6 @@ class TestGDPdUExport(AppTestCase):
 
 	def test_tax_rate_convention(self):
 		"""ERP-104: 0 is never a rate; explicit rates win; exempt accounts are declared."""
-		baseline = sum(
-			warning.count for warning in self.build().protocol.warnings if warning.code == "missing_tax_rate"
-		)
 		reduced = create_account(("1771", "Umsatzsteuer 7 % GDPdU", "Liability", "Tax"))
 		frappe.db.set_value("Account", reduced, "tax_rate", 7)
 		missing = create_account(("1778", "Umsatzsteuer ohne Satz GDPdU", "Liability", "Tax"))
@@ -207,39 +204,42 @@ class TestGDPdUExport(AppTestCase):
 		frappe.db.set_value("Account", exempt, "tax_rate", 0)
 
 		# Like the SKR03 standard templates: a row with 0 % for an account with 7 %.
-		template = frappe.get_doc(
-			{
-				"doctype": "Sales Taxes and Charges Template",
-				"title": "_Test GDPdU Null",
-				"company": COMPANY,
-				"taxes": [
-					{
-						"charge_type": "On Net Total",
-						"account_head": account,
-						"description": "0 %",
-						"rate": 0,
-					}
-					for account in (reduced, missing)
-				],
-			}
-		).insert()
+		if not frappe.db.exists("Sales Taxes and Charges Template", {"title": "_Test GDPdU Null"}):
+			frappe.get_doc(
+				{
+					"doctype": "Sales Taxes and Charges Template",
+					"title": "_Test GDPdU Null",
+					"company": COMPANY,
+					"taxes": [
+						{
+							"charge_type": "On Net Total",
+							"account_head": account,
+							"description": "0 %",
+							"rate": 0,
+						}
+						for account in (reduced, missing)
+					],
+				}
+			).insert()
 
 		settings = frappe.get_doc("GDPdU Company Settings", ensure_company_settings(COMPANY))
 		settings.set("tax_exempt_accounts", [{"account": exempt}])
 		settings.save()
 
 		def cleanup():
+			# The accounts and the template stay: inserting and deleting accounts rebuilds the
+			# account tree of the whole site and deadlocks with parallel test runs.
 			settings.reload()
 			settings.set("tax_exempt_accounts", [])
 			settings.save()
-			frappe.delete_doc("Sales Taxes and Charges Template", template.name, force=True)
-			for account in (reduced, missing, exempt):
-				frappe.delete_doc("Account", account, force=True)
 
 		self.addCleanup(cleanup)
 
 		result = self.build()
-		rows = {row["Steuerkonto"]: row for row in self.read_csv(self.read_package(result), "steuerkennzeichen.csv")}
+		rows = {
+			row["Steuerkonto"]: row
+			for row in self.read_csv(self.read_package(result), "steuerkennzeichen.csv")
+		}
 
 		self.assertEqual(rows["1776"]["Satz"], "19,00")
 		self.assertEqual(rows["1771"]["Satz"], "7,00")
@@ -247,11 +247,22 @@ class TestGDPdUExport(AppTestCase):
 		self.assertEqual(rows["1778"]["Satz"], "")
 		self.assertEqual(rows["1779"]["Satz"], "0,00")
 
-		warnings = {warning.code: warning for warning in result.protocol.warnings}
-		self.assertIn("missing_tax_rate", warnings)
-		# The standard chart of the test company may hold further tax accounts without a
-		# rate; of the three new accounts only the one without rate and mark may add to them.
-		self.assertEqual(warnings["missing_tax_rate"].count, baseline + 1)
+		self.assertIn("missing_tax_rate", [warning.code for warning in result.protocol.warnings])
+
+		# Which accounts warn: the protocol keeps only a few samples, so record them all.
+		# The standard chart of the test company may hold further tax accounts without rate.
+		warned = []
+
+		class RecordingProtocol(Protocol):
+			def add_warning(self, code, message, hint="", sample=""):
+				if code == "missing_tax_rate":
+					warned.append(sample)
+				super().add_warning(code, message, hint, sample)
+
+		list(taxes.iter_rows(self.context(protocol=RecordingProtocol())))
+		self.assertIn("Umsatzsteuer ohne Satz GDPdU", warned)
+		for name in ("Umsatzsteuer GDPdU", "Umsatzsteuer 7 % GDPdU", "Steuerfrei GDPdU"):
+			self.assertNotIn(name, warned)
 
 	def test_tax_exempt_accounts_must_be_tax_accounts_of_the_company(self):
 		settings = frappe.get_doc("GDPdU Company Settings", ensure_company_settings(COMPANY))

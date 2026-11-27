@@ -37,7 +37,9 @@ from erpnext_gdpdu_export.gdpdu_export.doctype.gdpdu_export.test_gdpdu_export im
 from erpnext_gdpdu_export.patches.v0_3 import create_company_settings as patch
 from erpnext_gdpdu_export.tests.base import LEGACY_TEST_RUNNER, AppTestCase
 
-IGNORE_TEST_RECORD_DEPENDENCIES = ["Company"]
+#: "Account": the tax-exempt accounts table links to Account, whose test records need a
+#: fiscal year for ERPNext's own "_Test Company"; the tests build their own accounts.
+IGNORE_TEST_RECORD_DEPENDENCIES = ["Company", "Account"]
 
 if LEGACY_TEST_RUNNER:
 	test_ignore = IGNORE_TEST_RECORD_DEPENDENCIES
@@ -319,7 +321,9 @@ class TestGDPdUCompanySettings(AppTestCase):
 			module.create_for_new_company(company, "after_insert")
 
 		self.assertTrue(
-			frappe.db.exists("Error Log", {"method": f"GDPdU Company Settings für {SUBSIDIARY} nicht angelegt"})
+			frappe.db.exists(
+				"Error Log", {"method": f"GDPdU Company Settings für {SUBSIDIARY} nicht angelegt"}
+			)
 		)
 
 	# --------------------------------------------------------- fiscal years
