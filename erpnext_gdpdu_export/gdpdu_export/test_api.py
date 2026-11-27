@@ -249,6 +249,34 @@ class TestApi(AppTestCase):
 		finally:
 			frappe.set_user("Administrator")
 
+	def test_app_is_on_the_apps_screen(self):
+		"""ERP-125: entry on the apps screen, only for users who may read exports."""
+		from frappe.apps import get_apps
+
+		entries = [app for app in get_apps() if app["name"] == "erpnext_gdpdu_export"]
+		self.assertEqual(len(entries), 1)
+		self.assertTrue(entries[0]["route"].endswith("/gobd-export"))
+		self.assertEqual(entries[0]["logo"], "/assets/erpnext_gdpdu_export/images/logo.svg")
+
+		frappe.set_user("Guest")
+		try:
+			self.assertFalse(api.has_app_permission())
+		finally:
+			frappe.set_user("Administrator")
+		self.assertTrue(api.has_app_permission())
+
+	def test_desktop_icon_file_matches_its_label(self):
+		"""Frappe 16 deletes a standard Desktop Icon whose file is not scrub(label).json."""
+		import json
+		import os
+
+		folder = frappe.get_app_path("erpnext_gdpdu_export", "desktop_icon")
+		for filename in os.listdir(folder):
+			with open(os.path.join(folder, filename), encoding="utf-8") as handle:
+				icon = json.load(handle)
+			self.assertEqual(filename, f"{frappe.scrub(icon['label'])}.json")
+			self.assertEqual(icon["name"], icon["label"])
+
 	def test_dtd_status(self):
 		status = api.get_dtd_status()
 		self.assertEqual(status["file_name"], DTD_FILE_NAME)

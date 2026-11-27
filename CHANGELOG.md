@@ -9,6 +9,10 @@
   Unternehmen selbst wird trotzdem angelegt (ERP-087).
 - Feld **Steuerfreie Steuerkonten (0 %)** in den GDPdU Company Settings (Kindtabelle
   *GDPdU Tax Exempt Account*): kennzeichnet Steuerkonten, deren Satz tatsächlich 0 % ist.
+- Eintrag im Startbildschirm „Apps“ (`add_to_apps_screen`), dem Standard von Frappe 16;
+  sichtbar für Benutzer mit Leserecht auf *GDPdU Export*, Route `/desk/gobd-export` (v16)
+  bzw. `/app/gobd-export` (v15). Die Desktop-Kachel „GoBD-Export“ bleibt für den Modus
+  „Desktop Icons“ erhalten und übersteht `bench migrate` (ERP-125).
 
 ### Fixed
 - Ein GDPdU Export und ein Datensatz GDPdU Company Settings verlangen das Unternehmen

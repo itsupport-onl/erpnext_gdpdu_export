@@ -383,6 +383,11 @@ def list_companies() -> list[dict]:
 # ------------------------------------------------------------------ helpers
 
 
+def has_app_permission() -> bool:
+	"""Apps screen (``add_to_apps_screen``): shown to users who may read exports."""
+	return bool(frappe.has_permission(EXPORT_DOCTYPE, "read"))
+
+
 def _require_company(company: str | None) -> None:
 	if not company:
 		frappe.throw("Bitte geben Sie das Unternehmen an (company).")
