@@ -237,6 +237,18 @@ class TestApi(AppTestCase):
 		self.assertTrue(years)
 		self.assertTrue(all({"name", "from_date", "to_date", "closed"} <= set(year) for year in years))
 
+	def test_lookups_need_read_permission_on_exports(self):
+		"""ERP-035: fiscal years and export scope only for users who may read exports."""
+		from erpnext_gdpdu_export.gdpdu_export.doctype.gdpdu_export.gdpdu_export import get_export_scope
+
+		self.assertTrue(get_export_scope())
+		frappe.set_user("Guest")
+		try:
+			self.assertRaises(frappe.PermissionError, api.fiscal_years_for_company, COMPANY)
+			self.assertRaises(frappe.PermissionError, get_export_scope)
+		finally:
+			frappe.set_user("Administrator")
+
 	def test_dtd_status(self):
 		status = api.get_dtd_status()
 		self.assertEqual(status["file_name"], DTD_FILE_NAME)

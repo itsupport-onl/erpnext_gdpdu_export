@@ -300,6 +300,7 @@ def company_overview(company: str, limit: int = 10) -> dict:
 @frappe.whitelist()
 def fiscal_years_for_company(company: str) -> list[dict]:
 	"""Fiscal years usable for ``company`` (unrestricted ones plus those naming the company)."""
+	frappe.has_permission(EXPORT_DOCTYPE, "read", throw=True)
 	_require_company(company)
 	years = frappe.get_all(
 		"Fiscal Year",

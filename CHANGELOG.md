@@ -12,6 +12,8 @@
   Unternehmen beschränkt ist (ERP-077).
 - `create_export(start=1)` liefert den Zustand nach dem Start: `status` „In Warteschlange“
   und `is_busy` true statt des Zustands vor dem Einreihen (ERP-041).
+- `fiscal_years_for_company` und `get_export_scope` verlangen Leserecht auf *GDPdU Export*,
+  wie alle anderen Funktionen der Schnittstelle (ERP-035).
 - Frappe 16: `delete_old_exports` und `company_overview` nutzen keine SQL-Funktionen mehr in
   `order_by`/`fields` (dort seit Frappe 16 verboten); Sortierung und Zählung laufen in Python.
 

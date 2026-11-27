@@ -249,6 +249,7 @@ class GDPdUExport(ExplicitCompanyMixin, Document):
 @frappe.whitelist()
 def get_export_scope() -> list[dict]:
 	"""Describe the exported tables for the form: one source of truth with the schema."""
+	frappe.has_permission("GDPdU Export", "read", throw=True)
 	return [
 		{"filename": table.filename, "name": table.name, "hint": table.user_hint} for table in get_tables()
 	]
