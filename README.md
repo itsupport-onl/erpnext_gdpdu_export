@@ -101,8 +101,9 @@ Was sich je Unternehmen unterscheidet, steht im Datensatz **GDPdU Company Settin
 | Fertige Exporte aufbewahren | Wie viele fertige Exporte „Alte Exporte löschen“ behält |
 
 Die Installation und das Update auf 0.3.0 legen den Datensatz für jedes vorhandene
-Unternehmen aus dessen Stammdaten an (Name, Steuernummer, Ort der Firmenadresse); ohne
-Datensatz greift der Export auf dieselben Stammdaten zurück. Das Standard-Unternehmen
+Unternehmen aus dessen Stammdaten an (Name, Steuernummer, Ort der Firmenadresse); ein
+später angelegtes Unternehmen erhält ihn beim Anlegen automatisch. Ohne Datensatz greift
+der Export auf dieselben Stammdaten zurück. Das Standard-Unternehmen
 in den **GDPdU Export Settings** ist nur eine Vorbelegung des Formulars; die
 Schnittstelle verlangt das Unternehmen immer ausdrücklich.
 

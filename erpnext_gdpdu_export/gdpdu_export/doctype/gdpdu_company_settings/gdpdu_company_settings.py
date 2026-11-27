@@ -140,3 +140,24 @@ def ensure_company_settings(company: str) -> str:
 	)
 	doc.insert(ignore_permissions=True)
 	return doc.name
+
+
+def create_for_new_company(doc, method=None) -> None:
+	"""``doc_events`` hook *Company* ``after_insert``: settings record for a new company.
+
+	The patch of 0.3.0 covers the companies that existed at the update; this hook covers
+	every company created later, so each one has its record from the start. The record
+	names the new company explicitly. A failure must never block the creation of the
+	company itself: the export falls back to the master data anyway, and
+	``company_overview`` reports the missing record.
+	"""
+	savepoint = "gdpdu_company_settings"
+	frappe.db.savepoint(savepoint)
+	try:
+		ensure_company_settings(doc.name)
+	except Exception:
+		frappe.db.rollback(save_point=savepoint)
+		frappe.log_error(
+			title=f"GDPdU Company Settings für {doc.name} nicht angelegt",
+			message=frappe.get_traceback(),
+		)

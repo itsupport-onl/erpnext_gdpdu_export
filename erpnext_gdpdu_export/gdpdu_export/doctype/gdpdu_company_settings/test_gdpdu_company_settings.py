@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import io
 import zipfile
+from unittest import mock
 
 import frappe
 from frappe.utils import nowdate
@@ -40,6 +41,10 @@ IGNORE_TEST_RECORD_DEPENDENCIES = ["Company"]
 
 if LEGACY_TEST_RUNNER:
 	test_ignore = IGNORE_TEST_RECORD_DEPENDENCIES
+
+#: A company created after the installation (ERP-087).
+LATE_COMPANY = "_Test GDPdU Neugründung GmbH"
+LATE_COMPANY_ABBR = "TGDN"
 
 #: The second company: a subsidiary audited separately from the first one.
 SUBSIDIARY = "_Test GDPdU Tochter UG"
@@ -275,6 +280,47 @@ class TestGDPdUCompanySettings(AppTestCase):
 		kept = frappe.db.get_value("GDPdU Company Settings", SUBSIDIARY, "tax_id")
 		self.assertEqual(kept, SUBSIDIARY_TAX_ID)
 		frappe.db.set_value("Company", SUBSIDIARY, "tax_id", None)
+
+	# ----------------------------------------------------- new companies
+
+	def test_company_created_later_gets_its_record(self):
+		"""ERP-087: the Company hook creates the record, naming the company explicitly."""
+		handlers = frappe.get_hooks("doc_events").get("Company", {}).get("after_insert", [])
+		self.assertIn(
+			"erpnext_gdpdu_export.gdpdu_export.doctype.gdpdu_company_settings."
+			"gdpdu_company_settings.create_for_new_company",
+			handlers,
+		)
+
+		if frappe.db.exists("Company", LATE_COMPANY):
+			# A previous run created the company already: drop its record and run the
+			# after_insert handlers the way Frappe runs them for a new company.
+			frappe.delete_doc("GDPdU Company Settings", LATE_COMPANY, force=True, ignore_missing=True)
+			company = frappe.get_doc("Company", LATE_COMPANY)
+			for handler in handlers:
+				frappe.get_attr(handler)(company, "after_insert")
+		else:
+			create_company(LATE_COMPANY, LATE_COMPANY_ABBR)
+
+		record = frappe.db.get_value(
+			"GDPdU Company Settings", {"company": LATE_COMPANY}, ["name", "company", "supplier_name"]
+		)
+		self.assertIsNotNone(record)
+		self.assertEqual(record[1], LATE_COMPANY)
+		self.assertEqual(record[2], LATE_COMPANY)
+
+	def test_failing_record_does_not_block_the_company(self):
+		from erpnext_gdpdu_export.gdpdu_export.doctype.gdpdu_company_settings import (
+			gdpdu_company_settings as module,
+		)
+
+		company = frappe.get_doc("Company", SUBSIDIARY)
+		with mock.patch.object(module, "ensure_company_settings", side_effect=frappe.ValidationError):
+			module.create_for_new_company(company, "after_insert")
+
+		self.assertTrue(
+			frappe.db.exists("Error Log", {"method": f"GDPdU Company Settings für {SUBSIDIARY} nicht angelegt"})
+		)
 
 	# --------------------------------------------------------- fiscal years
 

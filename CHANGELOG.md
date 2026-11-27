@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Hinzugefügt
+- Ein nach der Installation angelegtes Unternehmen erhält seinen Datensatz *GDPdU Company
+  Settings* sofort: `doc_events`-Hook auf *Company* `after_insert`, der Datensatz nennt das
+  Unternehmen ausdrücklich. Scheitert das Anlegen, entsteht ein Error-Log-Eintrag; das
+  Unternehmen selbst wird trotzdem angelegt (ERP-087).
+
 ### Fixed
 - Ein GDPdU Export und ein Datensatz GDPdU Company Settings verlangen das Unternehmen
   ausdrücklich. Frappe belegte ein leeres Feld bisher still mit dem Standardunternehmen; ein
