@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-27
+
 ### Hinzugefügt
 - Ein nach der Installation angelegtes Unternehmen erhält seinen Datensatz *GDPdU Company
   Settings* sofort: `doc_events`-Hook auf *Company* `after_insert`, der Datensatz nennt das
@@ -14,7 +16,12 @@
   bzw. `/app/gobd-export` (v15). Die Desktop-Kachel „GoBD-Export“ bleibt für den Modus
   „Desktop Icons“ erhalten und übersteht `bench migrate` (ERP-125).
 
-### Fixed
+### Geändert
+- README: Die Statuszeile nennt die Version 0.3.1 und die aktuelle Testzahl und sagt
+  ausdrücklich, dass die Validierung gegen die Original-DTD noch aussteht; die frühere
+  Angabe, das Paket sei gegen die Original-DTD validiert, war nicht belegt.
+
+### Behoben
 - Ein GDPdU Export und ein Datensatz GDPdU Company Settings verlangen das Unternehmen
   ausdrücklich. Frappe belegte ein leeres Feld bisher still mit dem Standardunternehmen; ein
   REST- oder MCP-Aufruf ohne `company` erzeugte so einen Export der falschen Firma (Abnahme
@@ -33,6 +40,9 @@
   Steuerkonto ohne Satz über 0 % bleibt leer und meldet `missing_tax_rate`, außer es ist als
   steuerfrei gekennzeichnet (dann 0,00). Konvention in README, SPEC.md und
   `gdpdu/extractors/taxes.py` (ERP-104).
+- Testsuite auf Frappe 16 auf Sites mit fremden Testdaten lauffähig: keine ERPNext-
+  Testdatensätze für Account mehr, Steuerkonten des Steuersatz-Tests werden nicht gelöscht
+  (Deadlocks beim Neuordnen des Kontenbaums bei parallelen Läufen).
 - Frappe 16: `delete_old_exports` und `company_overview` nutzen keine SQL-Funktionen mehr in
   `order_by`/`fields` (dort seit Frappe 16 verboten); Sortierung und Zählung laufen in Python.
 
