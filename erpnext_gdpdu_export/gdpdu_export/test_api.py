@@ -86,6 +86,18 @@ class TestApi(AppTestCase):
 		self.assertEqual(result["job_name"], f"gdpdu-export-{result['name']}")
 		self.assertEqual(enqueue.call_args.kwargs["export_name"], result["name"])
 
+	def test_create_and_start_reports_the_state_after_the_start(self):
+		"""ERP-041: the snapshot is taken after queueing, so is_busy matches the status."""
+		with patch("frappe.enqueue"):
+			result = self.create(start=1)
+
+		self.assertEqual(result["status"], "In Warteschlange")
+		self.assertTrue(result["is_busy"])
+		self.assertFalse(result["is_finished"])
+		status = api.get_export_status(result["name"])
+		for key in ("status", "is_busy", "is_finished", "started_at", "finished_at"):
+			self.assertEqual(result[key], status[key], key)
+
 	def test_start_export_refuses_a_running_export(self):
 		name = self.create()["name"]
 		with patch("frappe.enqueue"):

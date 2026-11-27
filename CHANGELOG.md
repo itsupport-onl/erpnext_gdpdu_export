@@ -10,6 +10,8 @@
 - Text in „Fertige Exporte aufbewahren“ ergibt 0 statt eines Serverfehlers (ERP-013).
 - Testfixtures ergänzen das Testunternehmen in einem Geschäftsjahr, das auf andere
   Unternehmen beschränkt ist (ERP-077).
+- `create_export(start=1)` liefert den Zustand nach dem Start: `status` „In Warteschlange“
+  und `is_busy` true statt des Zustands vor dem Einreihen (ERP-041).
 - Frappe 16: `delete_old_exports` und `company_overview` nutzen keine SQL-Funktionen mehr in
   `order_by`/`fields` (dort seit Frappe 16 verboten); Sortierung und Zählung laufen in Python.
 

@@ -84,10 +84,13 @@ def create_export(
 		}
 	).insert()
 
-	result = {"created": True, "started": False, **doc.get_status()}
-	if cint(start):
-		result.update(doc.start_export())
-		result["started"] = True
+	queued = doc.start_export() if cint(start) else None
+
+	# The snapshot is taken after the start, so status, is_busy and is_finished describe
+	# the document as it is now, not as it was before the job was queued.
+	result = {"created": True, "started": queued is not None, **doc.get_status()}
+	if queued:
+		result["job_name"] = queued["job_name"]
 	return result
 
 
